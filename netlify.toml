@@ -1,0 +1,26 @@
+# Deploy del Panel Central — site propio de Netlify, separado del de
+# cada landing individual. Ver README.md para los pasos de conexión.
+
+[build]
+  command = "pnpm run build"
+  publish = "dist"
+
+[build.environment]
+  # Igual a la versión local. El campo "packageManager" del package.json
+  # hace que corepack levante pnpm 11: el lockfile es v9 y pnpm 8 no lo lee.
+  NODE_VERSION = "22"
+
+# SPA con react-router: sin este redirect, entrar directo a
+# /jugador/andres_zanini o refrescar esa URL devuelve 404.
+[[redirects]]
+  from = "/*"
+  to = "/index.html"
+  status = 200
+
+# Es un panel de administración: fuera de los buscadores.
+[[headers]]
+  for = "/*"
+  [headers.values]
+    X-Robots-Tag = "noindex, nofollow"
+    X-Frame-Options = "DENY"
+    X-Content-Type-Options = "nosniff"

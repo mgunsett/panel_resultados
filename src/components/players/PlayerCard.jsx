@@ -1,23 +1,24 @@
 import { useState } from 'react'
 import { Box, Flex, VStack, Text, Image, Badge } from '@chakra-ui/react'
-import { motion } from 'framer-motion'
+import { motion, useReducedMotion } from 'framer-motion'
 import { playerInitials } from '../../data/players'
 
 const MotionBox = motion(Box)
 
 export default function PlayerCard({ player, onClick, index = 0 }) {
   const [imgFailed, setImgFailed] = useState(false)
+  const reduceMotion = useReducedMotion()
   const showImage = player.photo && !imgFailed
 
   return (
     <MotionBox
-      initial={{ opacity: 0, y: 12 }}
+      initial={reduceMotion ? { opacity: 0 } : { opacity: 0, y: 12 }}
       animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.28, delay: Math.min(index * 0.04, 0.3) }}
+      transition={{ duration: 0.28, delay: reduceMotion ? 0 : Math.min(index * 0.04, 0.3) }}
       // El lift del hover va por framer-motion y no por _hover de Chakra:
       // framer-motion escribe transform inline y le ganaría a la clase CSS.
-      whileHover={{ y: -3 }}
-      whileTap={{ scale: 0.985 }}
+      whileHover={reduceMotion ? undefined : { y: -3 }}
+      whileTap={reduceMotion ? undefined : { scale: 0.985 }}
       as="button"
       type="button"
       onClick={onClick}
@@ -34,7 +35,7 @@ export default function PlayerCard({ player, onClick, index = 0 }) {
       _focusVisible={{ outline: '2px solid', outlineColor: 'brand.amber', outlineOffset: '2px' }}
     >
       {/* Foto */}
-      <Box position="relative" w="100%" h={{ base: '150px', md: '170px' }} bg="brand.brown">
+      <Box position="relative" w="100%" h={{ base: '150px', md: '250px' }} bg="brand.brown">
         {showImage ? (
           <Image
             src={player.photo}

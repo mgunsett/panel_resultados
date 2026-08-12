@@ -1,4 +1,6 @@
+# Dependencias autorizadas a correr sus scripts de instalación.
+# esbuild lo necesita sí o sí: su postinstall baja el binario que usa Vite.
 allowBuilds:
-  '@firebase/util': set this to true or false
-  esbuild: set this to true or false
-  protobufjs: set this to true or false
+  '@firebase/util': true
+  esbuild: true
+  protobufjs: true

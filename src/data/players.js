@@ -63,6 +63,36 @@ export const players = [
     club: 'Cusco FC',
     photo: '/players/nicolas_silva.webp',
   },
+  {
+    slug: 'cainf_fara',
+    name: 'Caín Fara',
+    club: 'Universitario',
+    photo: '/players/cainf_fara.webp',
+  },
+  {
+    slug: 'facundo_callejo',
+    name: 'Facundo Callejo',
+    club: 'Cusco FC',
+    photo: '/players/facundo_callejo.webp', 
+  },
+  {
+    slug: 'julian_aquino',
+    name: 'Julián Aquino',
+    club: 'Atlanta',
+    photo: '/players/julian_aquino.webp',
+  },
+  {
+    slug: 'keki_piovi',
+    name: 'Keki Piovi',
+    club: 'Estudiantes de la Plata',
+    photo: '/players/keki_piovi.webp',
+  },
+  {
+    slug: 'luis_ramos',
+    name: 'Luis Ramos',
+    club: 'Alianza Lima',
+    photo: '/players/luis_ramos.webp',
+  }
 ]
 
 export function getPlayer(slug) {

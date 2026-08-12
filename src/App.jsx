@@ -1,8 +1,10 @@
 import { Routes, Route, Navigate, useLocation } from 'react-router-dom'
 import { Box, Spinner } from '@chakra-ui/react'
+import { AnimatePresence } from 'framer-motion'
 import { useAuth } from './lib/auth'
 import { isFirebaseConfigured } from './lib/firebase'
 import NotConfigured from './components/ui/NotConfigured'
+import PageTransition from './components/ui/PageTransition'
 import LoginPage from './pages/LoginPage'
 import PlayersPage from './pages/PlayersPage'
 import PlayerDetailPage from './pages/PlayerDetailPage'
@@ -23,33 +25,52 @@ function Protected({ children }) {
   }
 
   if (!user) {
-    return <Navigate to="/login" state={{ from: location.pathname }} replace />
+    // Guardamos la ruta completa (con query) para volver acá post-login.
+    const from = location.pathname + location.search
+    return <Navigate to="/login" state={{ from }} replace />
   }
 
   return children
 }
 
 export default function App() {
+  const location = useLocation()
+
   return (
-    <Routes>
-      <Route path="/login" element={<LoginPage />} />
-      <Route
-        path="/"
-        element={
-          <Protected>
-            <PlayersPage />
-          </Protected>
-        }
-      />
-      <Route
-        path="/jugador/:slug"
-        element={
-          <Protected>
-            <PlayerDetailPage />
-          </Protected>
-        }
-      />
-      <Route path="*" element={<Navigate to="/" replace />} />
-    </Routes>
+    // `location` + `key` explícitos: sin esto AnimatePresence no ve el
+    // cambio de ruta y nunca dispara el exit de la vista saliente.
+    <AnimatePresence mode="wait" initial={false}>
+      <Routes location={location} key={location.pathname}>
+        <Route
+          path="/login"
+          element={
+            <PageTransition>
+              <LoginPage />
+            </PageTransition>
+          }
+        />
+        <Route
+          path="/"
+          element={
+            <Protected>
+              <PageTransition>
+                <PlayersPage />
+              </PageTransition>
+            </Protected>
+          }
+        />
+        <Route
+          path="/jugador/:slug"
+          element={
+            <Protected>
+              <PageTransition>
+                <PlayerDetailPage />
+              </PageTransition>
+            </Protected>
+          }
+        />
+        <Route path="*" element={<Navigate to="/" replace />} />
+      </Routes>
+    </AnimatePresence>
   )
 }
