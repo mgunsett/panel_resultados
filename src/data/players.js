@@ -15,7 +15,7 @@ export const players = [
     photo: '/players/andres_zanini.webp',
   },
   {
-    slug: 'francisco_fydriszewski',
+    slug: 'polaco_fydriszewski',
     name: 'Polaco Fydriszewski',
     club: 'Independiente Medellín',
     photo: '/players/francisco_fydriszewski.png',

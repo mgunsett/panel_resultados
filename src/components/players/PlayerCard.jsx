@@ -35,7 +35,7 @@ export default function PlayerCard({ player, onClick, index = 0 }) {
       _focusVisible={{ outline: '2px solid', outlineColor: 'brand.amber', outlineOffset: '2px' }}
     >
       {/* Foto */}
-      <Box position="relative" w="100%" h={{ base: '150px', md: '250px' }} bg="brand.brown">
+      <Box position="relative" w="100%" h={{ base: '150px', md: '300px' }} bg="brand.brown">
         {showImage ? (
           <Image
             src={player.photo}
