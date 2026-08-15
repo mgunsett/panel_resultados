@@ -23,7 +23,7 @@ export const players = [
   {
     slug: 'polaco_fydriszewski',
     name: 'Polaco Fydriszewski',
-    clubId: 'independiente_medellin',
+    clubId: 'junior',
     photo: '/players/francisco_fydriszewski.png',
   },
   {

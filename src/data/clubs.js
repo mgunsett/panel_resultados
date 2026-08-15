@@ -1,15 +1,14 @@
 // ─── CLUBES DEL PANEL ────────────────────────────────────────────
-// Archivo estático mantenido a mano, igual que players.js. NO sale de
-// Firestore: es sólo el catálogo visual (banner + escudo) de la sección
-// /clubes. Los partidos siguen viviendo en players/{slug}/matches.
-//
-// El `id` es la clave de agrupación: es lo que enlaza a un jugador con
-// su club vía el campo `clubId` de players.js. Se usa `id` y no el
-// nombre porque el mismo club venía escrito de formas distintas
-// ("Cusco F.C." vs "Cusco FC") y eso partía el grupo en dos.
-//
-// Para sumar un club: agregá la entrada acá, dejá el escudo en
-// public/clubs/ y poné su `id` en el `clubId` de los jugadores.
+
+import universitario from '../../public/clubs/escudo_universitario.webp'
+import cusco from '../../public/clubs/escudo_cusco.webp'
+import emelec from '../../public/clubs/escudo_emelec.webp'
+import melgar from '../../public/clubs/escudo_melgar.webp'
+import serena from '../../public/clubs/escudo_serena.webp'
+import alianza from '../../public/clubs/escudo_alianzalima.webp'
+import atlanta from '../../public/clubs/escudo_atlanta.webp'
+import junior from '../../public/clubs/escudo_junior.webp'
+import estudiantes from '../../public/clubs/escudo_estudiantes.webp'
 
 export const clubs = [
   {
@@ -18,7 +17,7 @@ export const clubs = [
     country: 'Perú',
     competition: 'Liga 1',
     stadium: 'Estadio Monumental "U"',
-    crest: '/clubs/universitario.png',
+    crest: universitario,
   },
   {
     id: 'cusco_fc',
@@ -26,7 +25,7 @@ export const clubs = [
     country: 'Perú',
     competition: 'Liga 1',
     stadium: 'Estadio Inca Garcilaso de la Vega',
-    crest: '/clubs/cusco_fc.png',
+    crest: cusco,
   },
   {
     id: 'alianza_lima',
@@ -34,7 +33,7 @@ export const clubs = [
     country: 'Perú',
     competition: 'Liga 1',
     stadium: 'Estadio Alejandro Villanueva',
-    crest: '/clubs/alianza_lima.png',
+    crest: alianza,
   },
   {
     id: 'fbc_melgar',
@@ -42,7 +41,7 @@ export const clubs = [
     country: 'Perú',
     competition: 'Liga 1',
     stadium: 'Estadio Monumental de la UNSA',
-    crest: '/clubs/fbc_melgar.png',
+    crest: melgar,
   },
   {
     id: 'emelec',
@@ -50,15 +49,15 @@ export const clubs = [
     country: 'Ecuador',
     competition: 'LigaPro Serie A',
     stadium: 'Estadio George Capwell',
-    crest: '/clubs/emelec.png',
+    crest: emelec,
   },
   {
-    id: 'independiente_medellin',
-    name: 'Independiente Medellín',
+    id: 'junior',
+    name: 'Junior de Barranquilla',
     country: 'Colombia',
     competition: 'Liga BetPlay Dimayor',
     stadium: 'Estadio Atanasio Girardot',
-    crest: '/clubs/independiente_medellin.png',
+    crest: junior,
   },
   {
     id: 'deportes_la_serena',
@@ -66,7 +65,7 @@ export const clubs = [
     country: 'Chile',
     competition: 'Liga de Primera',
     stadium: 'Estadio La Portada',
-    crest: '/clubs/deportes_la_serena.png',
+    crest: serena,
   },
   {
     id: 'estudiantes_lp',
@@ -74,7 +73,7 @@ export const clubs = [
     country: 'Argentina',
     competition: 'Liga Profesional',
     stadium: 'Estadio Jorge Luis Hirschi',
-    crest: '/clubs/estudiantes_lp.png',
+    crest: estudiantes,
   },
   {
     id: 'atlanta',
@@ -82,7 +81,7 @@ export const clubs = [
     country: 'Argentina',
     competition: 'Primera Nacional',
     stadium: 'Estadio Don León Kolbowski',
-    crest: '/clubs/atlanta.png',
+    crest: atlanta,
   },
 ]
 
