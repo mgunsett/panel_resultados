@@ -1,12 +1,23 @@
 import { useRef } from 'react'
 import {
   AlertDialog, AlertDialogOverlay, AlertDialogContent, AlertDialogHeader,
-  AlertDialogBody, AlertDialogFooter, Button, Text,
+  AlertDialogBody, AlertDialogFooter, Button, Box,
 } from '@chakra-ui/react'
 
-// Borrar un partido es destructivo y pega directo en producción, así
-// que va con confirmación explícita.
-export default function ConfirmDeleteDialog({ isOpen, onClose, onConfirm, title, description }) {
+// Confirmación para acciones que pegan directo en producción: borrar un
+// partido, o guardar uno que se replica en varias landings a la vez.
+// `tone` sólo cambia el color del botón de confirmar — rojo para lo
+// destructivo, naranja de marca para lo que simplemente conviene mirar
+// dos veces antes de apretar.
+const TONES = {
+  danger: { bg: 'brand.rec', color: 'white', _hover: { bg: '#C13237' } },
+  brand: { bg: 'brand.orange', color: 'brand.brown', _hover: { bg: 'brand.orangeDark', color: 'white' } },
+}
+
+export default function ConfirmDialog({
+  isOpen, onClose, onConfirm, title, description,
+  confirmLabel = 'Confirmar', tone = 'danger', isLoading = false,
+}) {
   const cancelRef = useRef(null)
 
   return (
@@ -24,9 +35,9 @@ export default function ConfirmDeleteDialog({ isOpen, onClose, onConfirm, title,
           </AlertDialogHeader>
 
           <AlertDialogBody pb={4}>
-            <Text fontFamily="body" fontSize="sm" color="brand.gray" lineHeight={1.7}>
+            <Box fontFamily="body" fontSize="sm" color="brand.gray" lineHeight={1.7}>
               {description}
-            </Text>
+            </Box>
           </AlertDialogBody>
 
           <AlertDialogFooter gap={2}>
@@ -42,13 +53,13 @@ export default function ConfirmDeleteDialog({ isOpen, onClose, onConfirm, title,
               Cancelar
             </Button>
             <Button
-              bg="brand.rec" color="white"
+              {...TONES[tone]}
               fontFamily="mono" fontSize="xs"
               letterSpacing="widest" textTransform="uppercase"
-              _hover={{ bg: '#C13237' }}
+              isLoading={isLoading}
               onClick={() => { onConfirm(); onClose() }}
             >
-              Eliminar
+              {confirmLabel}
             </Button>
           </AlertDialogFooter>
         </AlertDialogContent>

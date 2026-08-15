@@ -1,7 +1,9 @@
 import { useState } from 'react'
-import { Box, Flex, VStack, Text, Image, Badge } from '@chakra-ui/react'
+import { Box, Flex, HStack, VStack, Text, Image, Badge } from '@chakra-ui/react'
 import { motion, useReducedMotion } from 'framer-motion'
 import { playerInitials } from '../../data/players'
+import { getClub } from '../../data/clubs'
+import ClubCrest from '../clubs/ClubCrest'
 
 const MotionBox = motion(Box)
 
@@ -9,6 +11,7 @@ export default function PlayerCard({ player, onClick, index = 0 }) {
   const [imgFailed, setImgFailed] = useState(false)
   const reduceMotion = useReducedMotion()
   const showImage = player.photo && !imgFailed
+  const club = getClub(player.clubId)
 
   return (
     <MotionBox
@@ -75,12 +78,18 @@ export default function PlayerCard({ player, onClick, index = 0 }) {
         >
           {player.name}
         </Text>
-        <Text
-          fontFamily="mono" fontSize="10px" color="brand.gray"
-          letterSpacing="widest" textTransform="uppercase" noOfLines={1}
-        >
-          {player.club}
-        </Text>
+        {/* El club sale de clubs.js vía clubId, no de un texto suelto
+            en cada jugador: así la grilla y la sección /clubes muestran
+            siempre el mismo nombre. */}
+        <HStack spacing={1.5} minW={0}>
+          {club && <ClubCrest club={club} size="18px" fontSize="9px" />}
+          <Text
+            fontFamily="mono" fontSize="10px" color="brand.gray"
+            letterSpacing="widest" textTransform="uppercase" noOfLines={1}
+          >
+            {club?.name || 'Sin club'}
+          </Text>
+        </HStack>
       </VStack>
     </MotionBox>
   )

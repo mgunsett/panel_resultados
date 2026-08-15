@@ -7,6 +7,7 @@ import { useAuth } from '../lib/auth'
 import { isFirebaseConfigured } from '../lib/firebase'
 import { labelStyle, inputStyle } from '../components/ui/formStyles'
 import NotConfigured from '../components/ui/NotConfigured'
+import BrandLogo from '../components/ui/BrandLogo'
 
 export default function LoginPage() {
   const { user, loading, login } = useAuth()
@@ -55,14 +56,11 @@ export default function LoginPage() {
         borderRadius="xl"
         p={{ base: 6, md: 8 }}
       >
-        <VStack spacing={1} mb={6} align="stretch">
-          <Text fontFamily="heading" fontSize="3xl" color="white" lineHeight={1}>
-            Panel Central
-            <Text as="span" color="brand.amber">_</Text>
-          </Text>
+        <VStack spacing={3} mb={6} align="stretch">
+          <BrandLogo height="34px" fontSize="2xl" />
           <Text fontFamily="mono" fontSize="10px" color="brand.gray"
                 letterSpacing="widest" textTransform="uppercase">
-            Carga de partidos · todos los jugadores
+            Panel central · carga de partidos
           </Text>
         </VStack>
 

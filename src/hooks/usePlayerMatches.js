@@ -1,26 +1,16 @@
 import { useState, useEffect, useCallback } from 'react'
 import { useToast } from '@chakra-ui/react'
-import { getDoc, setDoc, deleteDoc } from 'firebase/firestore'
-import { uploadBytes, getDownloadURL } from 'firebase/storage'
-import { playerMatchDoc, playerShieldRef, MATCH_SLOTS } from '../lib/firebase'
+import { setDoc, deleteDoc } from 'firebase/firestore'
+import { playerMatchDoc } from '../lib/firebase'
+import { emptyMatches, buildMatchPayload, fetchPlayerMatches } from '../lib/matches'
 
 // ─── PARTIDOS DE UN JUGADOR ──────────────────────────────────────
 // Misma lógica de carga/guardado/borrado del AdminPage de las
 // landings, pero recibiendo el slug como parámetro en vez de leerlo
 // de VITE_PLAYER_SLUG.
-
-const emptyMatches = { last: {}, next: {} }
-
-function fileExtension(file) {
-  const parts = file.name.split('.')
-  return parts.length > 1 ? parts.pop().toLowerCase() : 'png'
-}
-
-async function uploadShield(slug, file, teamName) {
-  const shieldRef = playerShieldRef(slug, teamName, fileExtension(file))
-  await uploadBytes(shieldRef, file)
-  return getDownloadURL(shieldRef)
-}
+//
+// Devuelve la misma forma que useClubMatches, así MatchEditor sirve
+// para las dos vistas sin saber cuál lo está usando.
 
 export function usePlayerMatches(slug) {
   const [matches, setMatches] = useState(emptyMatches)
@@ -39,15 +29,8 @@ export function usePlayerMatches(slug) {
 
     const load = async () => {
       try {
-        const snaps = await Promise.all(
-          MATCH_SLOTS.map((slot) => getDoc(playerMatchDoc(slug, slot)))
-        )
-        if (cancelled) return
-        const result = { ...emptyMatches }
-        snaps.forEach((snap, i) => {
-          if (snap.exists()) result[MATCH_SLOTS[i]] = snap.data()
-        })
-        setMatches(result)
+        const result = await fetchPlayerMatches(slug)
+        if (!cancelled) setMatches(result)
       } catch (err) {
         if (!cancelled) {
           toast({ title: 'No se pudieron cargar los partidos', description: err.message, status: 'error', duration: 5000 })
@@ -67,29 +50,7 @@ export function usePlayerMatches(slug) {
   const saveMatch = useCallback(async (slot, form, shieldFiles) => {
     setSaving(true)
     try {
-      let homeShieldUrl = form.home_shield || null
-      let awayShieldUrl = form.away_shield || null
-
-      if (shieldFiles.home) {
-        homeShieldUrl = await uploadShield(slug, shieldFiles.home, form.home_team || 'home')
-      }
-      if (shieldFiles.away) {
-        awayShieldUrl = await uploadShield(slug, shieldFiles.away, form.away_team || 'away')
-      }
-
-      const payload = {
-        home_team: form.home_team,
-        away_team: form.away_team,
-        home_score: form.home_score !== '' ? Number(form.home_score) : null,
-        away_score: form.away_score !== '' ? Number(form.away_score) : null,
-        match_date: form.match_date,
-        stadium: form.stadium,
-        competition: form.competition,
-        home_shield: homeShieldUrl,
-        away_shield: awayShieldUrl,
-        updated_at: new Date().toISOString(),
-      }
-
+      const payload = await buildMatchPayload(form, shieldFiles, slug)
       await setDoc(playerMatchDoc(slug, slot), payload)
       setMatches((prev) => ({ ...prev, [slot]: payload }))
       toast({ title: 'Partido guardado', status: 'success', duration: 3000 })
@@ -112,5 +73,5 @@ export function usePlayerMatches(slug) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [slug])
 
-  return { matches, loading, saving, saveMatch, deleteMatch }
+  return { matches, loading, saving, saveMatch, deleteMatch, outOfSync: {} }
 }

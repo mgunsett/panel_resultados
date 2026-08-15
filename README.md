@@ -34,6 +34,29 @@ VITE_FIREBASE_APP_ID=
 > Este proyecto **no** lleva `VITE_PLAYER_SLUG`. El slug sale del parámetro de la
 > URL (`/jugador/:slug`), que es lo que le permite administrar a todos.
 
+## Secciones
+
+| Ruta | Qué hace |
+| --- | --- |
+| `/` | Home con la portada de LED Sports y los accesos |
+| `/jugadores` | Grilla de jugadores |
+| `/jugador/:slug` | Carga de partidos de **un** jugador |
+| `/clubes` | Grilla de clubes (uno por club, sin repetir) |
+| `/club/:clubId` | Carga de partidos para **todos** los jugadores del club |
+
+### Carga por club
+
+La sección de clubes no agrega una colección nueva a Firestore: escribe los
+mismos documentos de siempre — `players/{slug}/matches/{last|next}`, con el
+mismo payload — en todos los jugadores del club de una sola pasada, dentro de un
+`writeBatch` (atómico: o se actualizan todos o ninguno). Para las landings es
+indistinguible de una edición individual.
+
+Antes de guardar pide confirmación listando a quiénes va a pisar. Si los
+jugadores de un club no tienen el mismo partido cargado (porque alguien editó a
+uno por separado), el editor lo avisa, muestra el más reciente y al guardar los
+vuelve a emparejar.
+
 ## Sumar un jugador
 
 Editá [`src/data/players.js`](src/data/players.js) a mano y dejá la foto en
@@ -42,6 +65,22 @@ Editá [`src/data/players.js`](src/data/players.js) a mano y dejá la foto en
 El `slug` **debe coincidir con el `VITE_PLAYER_SLUG` de la landing individual**,
 que no siempre es igual al nombre de la carpeta del repo (ej: la carpeta
 `jp_ruizdiaz` usa el slug `jp_ruizgomez`).
+
+El `clubId` apunta a una entrada de [`src/data/clubs.js`](src/data/clubs.js) y es
+lo que agrupa al jugador en `/clubes`. Sin `clubId` el jugador sigue andando,
+pero queda fuera de la carga masiva por club.
+
+## Sumar un club
+
+Agregá la entrada en [`src/data/clubs.js`](src/data/clubs.js), dejá el escudo en
+`public/clubs/` con el nombre del campo `crest`, y poné su `id` en el `clubId`
+de los jugadores. Un club sin jugadores no aparece en la grilla.
+
+## Imágenes de marca
+
+`public/brand/led-sports-logo.png` y `public/brand/hero-bg.jpg`. Ver
+[`public/brand/README.md`](public/brand/README.md). Si faltan, el panel funciona
+igual con un wordmark tipográfico y un degradado de respaldo.
 
 ## Reglas de Firebase
 

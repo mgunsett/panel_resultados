@@ -16,6 +16,12 @@ const brand = {
   gray: '#AFA08D', // texto secundario
   bone: '#FFFFFF', // texto principal
   rec: '#E5484D', // errores / acciones destructivas
+  // Naranja del logo LED Sports. Se usa como acento de marca (Home,
+  // item activo del sidebar); el resto del panel sigue con `amber`
+  // para no repintar los componentes que ya estaban andando.
+  orange: '#F9A03F',
+  orangeDark: '#D97E1C',
+  orangeSoft: '#F9A03F26', // naranja translúcido para fondos activos
 }
 
 const theme = extendTheme({
