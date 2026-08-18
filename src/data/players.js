@@ -15,13 +15,19 @@ import { clubs, getClub } from './clubs'
 
 export const players = [
   {
+    slug: 'gonzalo_piovi',
+    name: 'Gonzalo Piovi',
+    clubId: 'cruz_azul',
+    photo: '/players/gonza_piovi.webp',
+  },
+  {
     slug: 'andres_zanini',
     name: 'Andrés Zanini',
     clubId: 'deportes_la_serena',
     photo: '/players/andres_zanini.webp',
   },
   {
-    slug: 'polaco_fydriszewski',
+    slug: 'francisco_fydriszewski',
     name: 'Polaco Fydriszewski',
     clubId: 'junior',
     photo: '/players/francisco_fydriszewski.png',
@@ -70,13 +76,13 @@ export const players = [
     photo: '/players/nicolas_silva.webp',
   },
   {
-    slug: 'cainf_fara',
+    slug: 'cain_fara',
     name: 'Caín Fara',
     clubId: 'universitario',
     photo: '/players/cainf_fara.webp',
   },
   {
-    slug: 'facundo_callejo',
+    slug: 'facu_callejo',
     name: 'Facundo Callejo',
     clubId: 'cusco_fc',
     photo: '/players/facundo_callejo.webp',

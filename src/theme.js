@@ -11,7 +11,7 @@ const brand = {
   amber: '#DBCCAF', // arena/dorado apagado (bordes/títulos)
   amberDark: '#8F7B54',
   amberLight: '#C2AC824F', // arena translúcida
-  dark: '#151312', // fondo del panel (sólido, sin alpha)
+  dark: '#080808af', // fondo del panel (sólido, sin alpha)
   dark2: '#1E1B19', // superficies elevadas (tarjetas)
   gray: '#AFA08D', // texto secundario
   bone: '#FFFFFF', // texto principal

@@ -9,6 +9,7 @@ import alianza from '../../public/clubs/escudo_alianzalima.webp'
 import atlanta from '../../public/clubs/escudo_atlanta.webp'
 import junior from '../../public/clubs/escudo_junior.webp'
 import estudiantes from '../../public/clubs/escudo_estudiantes.webp'
+import cruzAzul from '../../public/clubs/escudo_cruzazul.webp'
 
 export const clubs = [
   {
@@ -34,6 +35,14 @@ export const clubs = [
     competition: 'Liga 1',
     stadium: 'Estadio Alejandro Villanueva',
     crest: alianza,
+  },
+  {
+    id: 'cruz_azul',
+    name: 'Cruz Azul',
+    country: 'México',
+    competition: 'Liga MX',
+    stadium: 'Estadio Azteca',
+    crest: cruzAzul,
   },
   {
     id: 'fbc_melgar',

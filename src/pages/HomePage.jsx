@@ -1,4 +1,4 @@
-import { Box, Flex, VStack, SimpleGrid, Text } from '@chakra-ui/react'
+import { Box, Flex, VStack, SimpleGrid, Text, Image } from '@chakra-ui/react'
 import { FiUsers, FiShield } from 'react-icons/fi'
 import { useNavigate } from 'react-router-dom'
 import { motion, useReducedMotion } from 'framer-motion'
@@ -6,26 +6,27 @@ import { players, getClubsWithPlayers } from '../data/players'
 import BrandLogo from '../components/ui/BrandLogo'
 import HomeShortcut from '../components/home/HomeShortcut'
 import PageContainer from '../components/layout/PageContainer'
+import heroBg from '../assets/fondo_led.png'
 
 // ─── HOME ────────────────────────────────────────────────────────
-// La foto de portada va en public/brand/hero-bg.jpg. Se muestra a
-// altura fija por breakpoint en vez de a pantalla completa: con
-// `cover` sobre un viewport de celular (mucho más angosto que la foto)
-// el recorte lateral se comería la frase. A estas alturas el recorte
-// es mínimo y la frase se lee entera en cualquier pantalla.
+// La foto de portada vive en src/assets: importada así, Vite la
+// resuelve, le pone hash y la copia al build. (Desde public/ no se
+// puede importar; ahí sólo se referencian por URL absoluta.)
 //
-// Si el archivo todavía no está, queda el degradado de respaldo que va
-// debajo en la misma propiedad `backgroundImage`.
+// Se muestra a altura fija por breakpoint en vez de a pantalla
+// completa: con `cover` sobre un viewport de celular (mucho más
+// angosto que la foto) el recorte lateral se comería la frase. A
+// estas alturas el recorte es mínimo y se lee entera en cualquier
+// pantalla. Debajo queda el degradado de respaldo, en la misma
+// propiedad `backgroundImage`.
 
-const HERO_SRC = '/brand/hero-bg.jpg'
-const FALLBACK_GRADIENT =
-  'radial-gradient(120% 90% at 50% 40%, #2A2522 0%, #151312 70%)'
+const HERO_SRC = heroBg
 
 // Oscurece arriba y abajo y deja el centro limpio, que es donde vive
 // la frase de la foto.
 const SCRIM =
-  'linear-gradient(180deg, rgba(21,19,18,0.92) 0%, rgba(21,19,18,0.30) 26%, ' +
-  'rgba(21,19,18,0.30) 58%, rgba(21,19,18,0.85) 88%, #151312 100%)'
+  'linear-gradient(180deg, rgba(0, 0, 0, 0.92) 0%, rgba(26, 24, 23, 0.3) 26%, ' +
+  'rgba(12, 12, 11, 0.3) 58%, rgba(12, 12, 12, 0.85) 88%, #151312 100%)'
 
 const MotionBox = motion(Box)
 
@@ -39,13 +40,21 @@ export default function HomePage() {
       <Box
         position="relative"
         h={{ base: '58vh', md: '62vh', lg: '68vh' }}
-        minH={{ base: '360px', lg: '440px' }}
-        backgroundImage={`url(${HERO_SRC}), ${FALLBACK_GRADIENT}`}
-        backgroundSize="cover"
-        backgroundPosition="center"
-        backgroundRepeat="no-repeat"
+        minH={{ base: '360px', lg: '440px' }} 
         bgColor="brand.dark"
       >
+
+        <Image
+          src={HERO_SRC}
+          alt="Hero"
+          objectFit="cover"
+          w="60%"
+          h="100%"
+          position="absolute"
+          top={0}
+          left={80}
+          backgrounColor="brand.dark"
+        />
         <Box position="absolute" inset={0} backgroundImage={SCRIM} />
 
         <Flex
