@@ -1,32 +1,18 @@
-import { Box, Flex, VStack, SimpleGrid, Text, Image } from '@chakra-ui/react'
+import { Box, Flex, VStack, SimpleGrid, Text, Image, useBreakpoint } from '@chakra-ui/react'
 import { FiUsers, FiShield } from 'react-icons/fi'
 import { useNavigate } from 'react-router-dom'
 import { motion, useReducedMotion } from 'framer-motion'
 import { players, getClubsWithPlayers } from '../data/players'
-import BrandLogo from '../components/ui/BrandLogo'
+
 import HomeShortcut from '../components/home/HomeShortcut'
 import PageContainer from '../components/layout/PageContainer'
-import heroBg from '../assets/fondo_led.png'
+import heroBg from '../assets/fondo_led.webp'
+import heroBgMobile from '../assets/fondo_led2.webp'
 
-// ─── HOME ────────────────────────────────────────────────────────
-// La foto de portada vive en src/assets: importada así, Vite la
-// resuelve, le pone hash y la copia al build. (Desde public/ no se
-// puede importar; ahí sólo se referencian por URL absoluta.)
-//
-// Se muestra a altura fija por breakpoint en vez de a pantalla
-// completa: con `cover` sobre un viewport de celular (mucho más
-// angosto que la foto) el recorte lateral se comería la frase. A
-// estas alturas el recorte es mínimo y se lee entera en cualquier
-// pantalla. Debajo queda el degradado de respaldo, en la misma
-// propiedad `backgroundImage`.
 
 const HERO_SRC = heroBg
+const HERO_SRC_MOBILE = heroBgMobile
 
-// Oscurece arriba y abajo y deja el centro limpio, que es donde vive
-// la frase de la foto.
-const SCRIM =
-  'linear-gradient(180deg, rgba(0, 0, 0, 0.92) 0%, rgba(26, 24, 23, 0.3) 26%, ' +
-  'rgba(12, 12, 11, 0.3) 58%, rgba(12, 12, 12, 0.85) 88%, #151312 100%)'
 
 const MotionBox = motion(Box)
 
@@ -34,29 +20,31 @@ export default function HomePage() {
   const navigate = useNavigate()
   const reduceMotion = useReducedMotion()
   const clubCount = getClubsWithPlayers().length
+  
+  const breakpoint = useBreakpoint()
+  const heroBackground = breakpoint === 'base' ? HERO_SRC_MOBILE : HERO_SRC
 
   return (
     <Box>
       <Box
         position="relative"
-        h={{ base: '58vh', md: '62vh', lg: '68vh' }}
+        h={{ base: '58vh', md: '62vh', lg: '78vh' }}
         minH={{ base: '360px', lg: '440px' }} 
         bgColor="brand.dark"
       >
-
         <Image
-          src={HERO_SRC}
+          src={heroBackground}
+          fallbackSrc={HERO_SRC_MOBILE}
           alt="Hero"
           objectFit="cover"
-          w="60%"
-          h="100%"
+          w="100%"
+          h={{ base: '100%', md: '100%', lg: '102%' }}
           position="absolute"
           top={0}
-          left={80}
-          backgrounColor="brand.dark"
+          left={0}
+          backgroundColor="brand.dark"
         />
-        <Box position="absolute" inset={0} backgroundImage={SCRIM} />
-
+       
         <Flex
           position="relative"
           direction="column"
@@ -71,7 +59,17 @@ export default function HomePage() {
             transition={{ duration: 0.45, ease: 'easeOut' }}
           >
             <VStack align="flex-start" spacing={3}>
-              <BrandLogo height={{ base: '38px', md: '52px' }} fontSize="3xl" />
+              <Text
+                fontFamily="heading"
+                fontSize={{ base: '2xl', md: '3xl', lg: '4xl' }}
+                lineHeight={1}
+                letterSpacing="wide"
+                color="white"
+                fontStyle="medium"
+                whiteSpace="nowrap"
+              >
+                <Text as="span" color="brand.orange">PANEL</Text> _ADMIN
+              </Text>
               <Flex align="center" gap={2}>
                 <Box w="22px" h="2px" bg="brand.orange" />
                 <Text
@@ -86,7 +84,7 @@ export default function HomePage() {
         </Flex>
       </Box>
 
-      <PageContainer maxW="900px">
+      <PageContainer maxW="800px">
         <Text
           fontFamily="mono" fontSize="10px" color="brand.gray"
           textTransform="uppercase" letterSpacing="widest" mb={4}
