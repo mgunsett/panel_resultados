@@ -8,6 +8,7 @@ import { isFirebaseConfigured } from '../lib/firebase'
 import { labelStyle, inputStyle } from '../components/ui/formStyles'
 import NotConfigured from '../components/ui/NotConfigured'
 import BrandLogo from '../components/ui/BrandLogo'
+import fondoLogin from '../assets/fondo_led3.webp'
 
 export default function LoginPage() {
   const { user, loading, login } = useAuth()
@@ -47,7 +48,7 @@ export default function LoginPage() {
   }
 
   return (
-    <Box minH="100vh" bg="brand.dark" display="flex" alignItems="center" justifyContent="center" px={4}>
+    <Box minH="100vh" bg={{ base: `url(${fondoLogin}) no-repeat right center fixed`, md: `url(${fondoLogin}) no-repeat center center fixed` }} bgSize="cover" display="flex" alignItems="center" justifyContent="center" px={4}>
       <Box
         w="full" maxW="380px"
         bg="brand.dark"
