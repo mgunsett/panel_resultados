@@ -28,7 +28,7 @@ export default function HomePage() {
     <Box>
       <Box
         position="relative"
-        h={{ base: '58vh', md: '62vh', lg: '78vh' }}
+        h={{ base: '58vh', md: '62vh', lg: '74vh' }}
         minH={{ base: '360px', lg: '440px' }} 
         bgColor="brand.dark"
       >
@@ -59,24 +59,14 @@ export default function HomePage() {
             transition={{ duration: 0.45, ease: 'easeOut' }}
           >
             <VStack align="flex-start" spacing={3}>
-              <Text
-                fontFamily="heading"
-                fontSize={{ base: '2xl', md: '3xl', lg: '4xl' }}
-                lineHeight={1}
-                letterSpacing="wide"
-                color="white"
-                fontStyle="medium"
-                whiteSpace="nowrap"
-              >
-                <Text as="span" color="brand.orange">PANEL</Text> _ADMIN
-              </Text>
+              
               <Flex align="center" gap={2}>
-                <Box w="22px" h="2px" bg="brand.orange" />
+                <Box w="2px" h="30px" bg="brand.orange" />
                 <Text
-                  fontFamily="mono" fontSize={{ base: '10px', md: 'xs' }} color="brand.gray"
+                  fontFamily="mono" fontSize={{ base: '10px', md: 'lg' }} color="brand.gray"
                   textTransform="uppercase" letterSpacing="widest"
                 >
-                  Panel Central de Resultados
+                  Panel de Resultados
                 </Text>
               </Flex>
             </VStack>
@@ -92,7 +82,7 @@ export default function HomePage() {
           ¿Por dónde querés empezar?
         </Text>
 
-        <SimpleGrid columns={{ base: 1, md: 2 }} spacing={{ base: 3, md: 5 }}>
+        <SimpleGrid columns={{ base: 1, md: 2 }} spacing={{ base: 3, md: 5 }} backgroundColor="transparent" mb={6}>
           <HomeShortcut
             icon={FiUsers}
             label="Jugadores"

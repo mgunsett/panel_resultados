@@ -21,6 +21,12 @@ export const players = [
     photo: '/players/gonza_piovi.webp',
   },
   {
+    slug: 'ronaldo_martinez',
+    name: 'Ronaldo Martínez',
+    clubId: 'talleres',
+    photo: '/players/ronaldo_martinez.webp',
+  },
+  {
     slug: 'andres_zanini',
     name: 'Andrés Zanini',
     clubId: 'deportes_la_serena',

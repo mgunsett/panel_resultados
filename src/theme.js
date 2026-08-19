@@ -6,7 +6,7 @@ import { extendTheme } from '@chakra-ui/react'
 // portados desde AdminPage.jsx funcionen sin tocar los estilos.
 const brand = {
   brown: '#171514', // base casi negra cálida
-  brownDark: '#2A2522', // bordes / divisores
+  brownDark: '#423a35', // bordes / divisores
   brownLight: '#3B322E', // sombra marrón cálida
   amber: '#DBCCAF', // arena/dorado apagado (bordes/títulos)
   amberDark: '#8F7B54',

@@ -10,12 +10,6 @@ import ClubBanner from '../components/clubs/ClubBanner'
 import ClubPlayersStrip from '../components/clubs/ClubPlayersStrip'
 import MatchEditor from '../components/match/MatchEditor'
 
-// ─── DETALLE POR CLUB ────────────────────────────────────────────
-// Carga masiva: el partido se escribe una vez y se replica en los docs
-// de todos los jugadores del club, que es lo que evita entrar uno por
-// uno. Los documentos y su formato son los mismos de siempre, así que
-// las landings no se enteran de la diferencia.
-
 export default function ClubDetailPage() {
   const { clubId } = useParams()
   const club = getClub(clubId)

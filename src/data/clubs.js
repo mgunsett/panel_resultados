@@ -10,6 +10,7 @@ import atlanta from '../../public/clubs/escudo_atlanta.webp'
 import junior from '../../public/clubs/escudo_junior.webp'
 import estudiantes from '../../public/clubs/escudo_estudiantes.webp'
 import cruzAzul from '../../public/clubs/escudo_cruzazul.webp'
+import talleres from '../../public/clubs/escudo_talleres.webp'
 
 export const clubs = [
   {
@@ -91,6 +92,14 @@ export const clubs = [
     competition: 'Primera Nacional',
     stadium: 'Estadio Don León Kolbowski',
     crest: atlanta,
+  },
+  {
+    id: 'talleres',
+    name: 'Talleres',
+    country: 'Argentina',
+    competition: 'Liga Profesional',
+    stadium: 'Estadio Mario Alberto Kempes',
+    crest: talleres,
   },
 ]
 

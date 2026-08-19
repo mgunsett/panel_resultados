@@ -51,7 +51,7 @@ function NavItem({ item, active, count, onClick }) {
         {item.label}
       </Text>
       {count != null && (
-        <Text fontFamily="mono" fontSize="11px" color={active ? 'brand.orange' : 'brand.brownLight'}>
+        <Text fontFamily="heading" fontSize="13px" color={active ? 'brand.orange' : 'brand.bone'}>
           {count}
         </Text>
       )}
@@ -72,7 +72,7 @@ export default function SidebarNav({ onNavigate }) {
   }
 
   return (
-    <Flex direction="column" h="100%" px={4} py={5}>
+    <Flex direction="column" h="100%" px={4} py={5} bg="brand.dark" color="white">
       <Box
         as="button" type="button" onClick={go('/')}
         alignSelf="flex-start" mb={7} px={1}

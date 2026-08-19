@@ -25,7 +25,7 @@ export default function HomeShortcut({ icon: Icon, label, description, count, on
       px={{ base: 4, md: 5 }}
       py={{ base: 4, md: 5 }}
       textAlign="left"
-      bg="rgba(30,27,25,0.72)"
+      bg="rgba(39, 39, 38, 0.72)"
       backdropFilter="blur(12px)"
       border="1px solid"
       borderColor="brand.brownDark"
@@ -52,7 +52,7 @@ export default function HomeShortcut({ icon: Icon, label, description, count, on
           {label}
         </Text>
         <Text
-          fontFamily="mono" fontSize="10px" color="brand.gray"
+          fontFamily="heading" fontSize="12px" color="brand.gray"
           textTransform="uppercase" letterSpacing="widest" noOfLines={1}
         >
           {count} · {description}

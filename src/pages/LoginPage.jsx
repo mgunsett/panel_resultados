@@ -50,7 +50,7 @@ export default function LoginPage() {
     <Box minH="100vh" bg="brand.dark" display="flex" alignItems="center" justifyContent="center" px={4}>
       <Box
         w="full" maxW="380px"
-        bg="brand.dark2"
+        bg="brand.dark"
         border="1px solid"
         borderColor="brand.brownDark"
         borderRadius="xl"
@@ -91,8 +91,8 @@ export default function LoginPage() {
             w="full" bg="brand.amber" color="brand.brown" h="44px"
             fontFamily="mono" fontSize="sm" letterSpacing="widest" textTransform="uppercase"
             borderRadius="md"
-            _hover={{ bg: 'brand.amberDark', color: 'white' }}
-            _active={{ bg: 'brand.amberDark' }}
+            _hover={{ bg: 'brand.orange', color: 'white' }}
+            _active={{ bg: 'brand.orangeDark' }}
             isLoading={authLoading}
             onClick={handleLogin}
           >
