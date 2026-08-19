@@ -42,8 +42,8 @@ export default function ClubCard({ club, onClick, index = 0 }) {
 
         <Badge
           position="absolute" top={2} right={2}
-          fontFamily="mono" fontSize="8px" letterSpacing="widest"
-          bg="brand.orangeSoft" color="brand.orange"
+          fontFamily="mono" fontSize="10px" letterSpacing="widest"
+          bg="transparent" color="brand.orange"
           border="1px solid" borderColor="brand.orange"
           px={2} py={0.5}
         >
@@ -57,13 +57,13 @@ export default function ClubCard({ club, onClick, index = 0 }) {
         borderTop="1px solid" borderColor="brand.brownDark"
       >
         <Text
-          fontFamily="heading" fontSize={{ base: 'lg', md: 'xl' }} color="white"
+          fontFamily="heading" fontSize={{ base: 'lg', md: '2xl' }} color="white"
           lineHeight={1.1} noOfLines={1}
         >
           {club.name}
         </Text>
         <Text
-          fontFamily="mono" fontSize="10px" color="brand.gray"
+          fontFamily="mono" fontSize="11px" color="brand.gray"
           letterSpacing="widest" textTransform="uppercase" noOfLines={1}
         >
           {club.country} · {club.competition}

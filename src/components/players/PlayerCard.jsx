@@ -26,7 +26,7 @@ export default function PlayerCard({ player, onClick, index = 0 }) {
       type="button"
       onClick={onClick}
       textAlign="left"
-      bg="brand.dark2"
+      bg="brand.dark"
       border="1px solid"
       borderColor="brand.brownDark"
       borderRadius="lg"
@@ -34,7 +34,8 @@ export default function PlayerCard({ player, onClick, index = 0 }) {
       cursor="pointer"
       transitionProperty="border-color"
       transitionDuration="0.2s"
-      _hover={{ borderColor: 'brand.amber' }}
+      role="group"
+      _grouphover={{ borderColor: 'brand.orange' }}
       _focusVisible={{ outline: '2px solid', outlineColor: 'brand.amber', outlineOffset: '2px' }}
     >
       {/* Foto */}
@@ -73,18 +74,15 @@ export default function PlayerCard({ player, onClick, index = 0 }) {
       {/* Datos */}
       <VStack align="stretch" spacing={1} px={4} py={3}>
         <Text
-          fontFamily="heading" fontSize={{ base: 'lg', md: 'xl' }} color="white"
-          lineHeight={1.1} noOfLines={1}
+          fontFamily="heading" fontSize={{ base: 'lg', md: '2xl' }} color="white" transition="color 0.2s"
+          lineHeight={1.1} noOfLines={1} _groupHover={{ color: 'brand.orange' }}
         >
           {player.name}
         </Text>
-        {/* El club sale de clubs.js vía clubId, no de un texto suelto
-            en cada jugador: así la grilla y la sección /clubes muestran
-            siempre el mismo nombre. */}
-        <HStack spacing={1.5} minW={0}>
-          {club && <ClubCrest club={club} size="18px" fontSize="9px" />}
+        <HStack spacing={2} minW={0}>
+          {club && <ClubCrest club={club} size="30px" fontSize="9px" />}
           <Text
-            fontFamily="mono" fontSize="10px" color="brand.gray"
+            fontFamily="mono" fontSize="12px" color="brand.gray" _groupHover={{ color: 'brand.bone' }}
             letterSpacing="widest" textTransform="uppercase" noOfLines={1}
           >
             {club?.name || 'Sin club'}

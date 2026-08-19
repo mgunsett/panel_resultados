@@ -11,6 +11,7 @@ import junior from '../../public/clubs/escudo_junior.webp'
 import estudiantes from '../../public/clubs/escudo_estudiantes.webp'
 import cruzAzul from '../../public/clubs/escudo_cruzazul.webp'
 import talleres from '../../public/clubs/escudo_talleres.webp'
+import platense from '../../public/clubs/escudo_platense.webp'
 
 export const clubs = [
   {
@@ -21,6 +22,14 @@ export const clubs = [
     stadium: 'Estadio Monumental "U"',
     crest: universitario,
   },
+  {
+    id: 'platense',
+    name: 'Platense',
+    country: 'Argentina',
+    competition: 'Liga Profesional',
+    stadium: 'Estadio Ciudad de Vicente López',
+    crest: platense,
+  },    
   {
     id: 'cusco_fc',
     name: 'Cusco FC',

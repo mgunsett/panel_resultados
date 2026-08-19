@@ -21,6 +21,12 @@ export const players = [
     photo: '/players/gonza_piovi.webp',
   },
   {
+    slug: 'guido_mainero',
+    name: 'Guido Mainero',
+    clubId: 'platense',
+    photo: '/players/guido_mainero.webp',
+  },
+  {
     slug: 'ronaldo_martinez',
     name: 'Ronaldo Martínez',
     clubId: 'talleres',
@@ -36,7 +42,7 @@ export const players = [
     slug: 'francisco_fydriszewski',
     name: 'Polaco Fydriszewski',
     clubId: 'junior',
-    photo: '/players/francisco_fydriszewski.png',
+    photo: '/players/francisco_fydriszewski.webp',
   },
   {
     slug: 'hector_fertoli',
@@ -60,7 +66,7 @@ export const players = [
     slug: 'licha_alzugaray',
     name: 'Lisandro Alzugaray',
     clubId: 'universitario',
-    photo: '/players/licha_alzugaray.png',
+    photo: '/players/licha_alzugaray.webp',
   },
   {
     slug: 'matias_dibenedetto',
