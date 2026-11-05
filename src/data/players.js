@@ -117,6 +117,12 @@ export const players = [
     clubId: 'alianza_lima',
     photo: '/players/luis_ramos.webp',
   },
+  {
+    slug: 'francisco_dezuniga',
+    name: 'Francisco De Zúniga',
+    clubId: 'dep_riestra',
+    photo: '/players/francisco_dezuniga.webp',
+  }
 ]
 
 export function getPlayer(slug) {

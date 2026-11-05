@@ -12,6 +12,7 @@ import estudiantes from '../../public/clubs/escudo_estudiantes.webp'
 import cruzAzul from '../../public/clubs/escudo_cruzazul.webp'
 import talleres from '../../public/clubs/escudo_talleres.webp'
 import platense from '../../public/clubs/escudo_platense.webp'
+import depRiestra from '../../public/clubs/escudo_riestra.webp'
 
 export const clubs = [
   {
@@ -110,6 +111,14 @@ export const clubs = [
     stadium: 'Estadio Mario Alberto Kempes',
     crest: talleres,
   },
+  {
+    id: 'dep_riestra',
+    name: 'Deportivo Riestra',
+    country: 'Argentina', 
+    competition: 'Liga Profesional',
+    stadium: 'Estadio Guillermo Laza',
+    crest: depRiestra,
+  }
 ]
 
 export function getClub(id) {
