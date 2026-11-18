@@ -90,6 +90,61 @@ restricción por slug ni por uid. Cualquier admin logueado puede escribirle a
 todos los jugadores. Están versionadas en cada landing (`firestore.rules` /
 `storage.rules`), las 13 con contenido idéntico.
 
+## Sincronización con API-Football
+
+Los partidos (`players/{slug}/matches/{last|next}`) y las estadísticas
+del último partido de cada jugador se actualizan solos desde
+[API-Football](https://www.api-football.com/documentation-v3). La key
+**nunca** llega al navegador: todo pasa por funciones de Netlify.
+
+| Archivo | Qué hace |
+| --- | --- |
+| `netlify/functions/sync-results.mjs` | Corre sola cada 3 horas (cron en UTC) |
+| `netlify/functions/api-football.mjs` | Puente para el panel: estado, búsquedas y "Sincronizar ahora". Exige el token del admin logueado |
+| `netlify/lib/sync.js` | La lógica de sincronización |
+| `netlify/lib/mappers.js` | Traduce la respuesta de la API a nuestro formato |
+| `src/pages/SyncPage.jsx` | Sección `/sincronizacion` del panel |
+
+### Qué escribe
+
+- **`matches/last` y `matches/next`**: mismo formato que la carga
+  manual, así que las landings no cambian. Suma `source: 'api'`,
+  `api_fixture_id`, `match_time` y los escudos con el logo de la API.
+- **`stats/last`** (nuevo): las estadísticas del jugador en su último
+  partido, con las mismas claves que la ficha de LED Sports (`minutos`,
+  `rating`, `goles`, `asistencias`, `pasesOk`, `duelosG`…). Cuando hay un
+  partido nuevo, la ficha anterior pasa a **`stats/prev`**. Si no jugó,
+  queda `jugo: false`.
+
+### Reglas
+
+- Sólo se sincronizan los clubes con `apiTeamId` en `clubs.js`. Las
+  estadísticas, sólo para los jugadores con `apiPlayerId` en `players.js`.
+- Un partido guardado desde el panel con **Bloquear** activado no se pisa
+  nunca. Sin bloquear, la próxima pasada lo reemplaza con lo de la API.
+- Si nada cambió, no se escribe nada.
+- Consumo: 2 requests por club en cada pasada, más 1 por club cuando
+  jugó. Con 13 clubes y una pasada cada 3 horas, unos 210 por día.
+
+### Puesta en marcha
+
+1. Netlify → **Site configuration → Environment variables**, con scope
+   **Functions**: `API_FOOTBALL_KEY`, `API_FOOTBALL_PROVIDER`,
+   `FIREBASE_ADMIN_PROJECT_ID`, `FIREBASE_ADMIN_CLIENT_EMAIL` y
+   `FIREBASE_ADMIN_PRIVATE_KEY` (ver `.env.example`).
+2. Deploy.
+3. En el panel, `/sincronizacion` → **Verificar conexión**.
+4. En la misma pantalla, buscá el ID de cada club y pegalo en
+   `src/data/clubs.js`. Deploy. Después hacé lo mismo con los jugadores
+   en `src/data/players.js`.
+5. **Probar sin guardar** para revisar qué escribiría. Si está bien,
+   **Sincronizar ahora**. Desde ahí sigue sola.
+
+Para pausarla: `SYNC_ENABLED=false` en Netlify.
+
+En local, `pnpm dev` no levanta las funciones. Para probar esta sección
+usá `netlify dev` (Netlify CLI) con las variables en tu `.env`.
+
 ## Deploy en Netlify
 
 Site **nuevo e independiente** — no toca el de ninguna landing.

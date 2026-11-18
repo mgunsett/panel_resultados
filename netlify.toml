@@ -10,6 +10,14 @@
   # hace que corepack levante pnpm 11: el lockfile es v9 y pnpm 8 no lo lee.
   NODE_VERSION = "22"
 
+# Funciones del servidor: sincronización con API-Football.
+# firebase-admin queda fuera del bundle (no se lleva bien con esbuild);
+# Netlify lo instala aparte junto a la función.
+[functions]
+  directory = "netlify/functions"
+  node_bundler = "esbuild"
+  external_node_modules = ["firebase-admin"]
+
 # SPA con react-router: sin este redirect, entrar directo a
 # /jugador/andres_zanini o refrescar esa URL devuelve 404.
 [[redirects]]
