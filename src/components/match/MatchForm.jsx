@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import {
-  Box, Flex, Text, Input, Button, FormControl, FormLabel, Grid, useToast,
+  Box, Flex, Text, Input, Button, FormControl, FormLabel, Grid, Switch, useToast,
 } from '@chakra-ui/react'
 import { FiSave } from 'react-icons/fi'
 import { labelStyle, inputStyle } from '../ui/formStyles'
@@ -11,15 +11,18 @@ const emptySlot = {
   home_score: '', away_score: '',
   match_date: '', stadium: '', competition: '',
   home_shield: '', away_shield: '',
+  locked: false,
 }
 
 // Firestore guarda los goles y escudos como number|null; los inputs
 // controlados necesitan string, así que normalizamos null → ''.
 function toFormState(data) {
   const merged = { ...emptySlot, ...(data || {}) }
-  return Object.fromEntries(
+  const state = Object.fromEntries(
     Object.entries(merged).map(([k, v]) => [k, v == null ? '' : v])
   )
+  // `locked` es el único booleano del formulario (va a un Switch).
+  return { ...state, locked: Boolean(merged.locked) }
 }
 
 // Bloque de un equipo (local o visitante).
@@ -131,6 +134,32 @@ export default function MatchForm({ slot, label, data, onSave, saving }) {
           <Input {...inputStyle} value={form.competition} onChange={set('competition')} placeholder="Liga Profesional" />
         </FormControl>
       </Grid>
+
+      <Flex
+        mt={4} px={3} py={3} gap={3} align="center"
+        bg="brand.dark" borderRadius="md"
+        border="1px solid" borderColor={form.locked ? 'brand.amber' : 'brand.brownDark'}
+      >
+        <Switch
+          id={`locked-${slot}`}
+          colorScheme="orange"
+          isChecked={form.locked}
+          onChange={(e) => setForm((f) => ({ ...f, locked: e.target.checked }))}
+        />
+        <Box as="label" htmlFor={`locked-${slot}`} cursor="pointer">
+          <Text fontFamily="mono" fontSize="xs" color="white" textTransform="uppercase" letterSpacing="wider">
+            Bloquear
+          </Text>
+          <Text fontSize="xs" color="brand.gray">
+            La sincronización automática con API-Football no va a pisar este partido.
+          </Text>
+        </Box>
+        {data?.source === 'api' && (
+          <Text ml="auto" fontFamily="mono" fontSize="9px" color="brand.amber" textTransform="uppercase" letterSpacing="widest">
+            Cargado por API
+          </Text>
+        )}
+      </Flex>
 
       <Button
         mt={5} w="full"

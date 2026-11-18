@@ -56,6 +56,10 @@ export async function buildMatchPayload(form, shieldFiles, ownerSlug) {
     home_shield: homeShieldUrl,
     away_shield: awayShieldUrl,
     updated_at: new Date().toISOString(),
+    // Sincronización con API-Football: lo cargado a mano queda marcado
+    // como manual, y con `locked` la sincronización no lo pisa.
+    source: 'manual',
+    locked: Boolean(form.locked),
   }
 }
 

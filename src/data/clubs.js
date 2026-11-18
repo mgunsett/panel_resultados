@@ -1,18 +1,11 @@
 // ─── CLUBES DEL PANEL ────────────────────────────────────────────
-
-import universitario from '../../public/clubs/escudo_universitario.webp'
-import cusco from '../../public/clubs/escudo_cusco.webp'
-import emelec from '../../public/clubs/escudo_emelec.webp'
-import melgar from '../../public/clubs/escudo_melgar.webp'
-import serena from '../../public/clubs/escudo_serena.webp'
-import alianza from '../../public/clubs/escudo_alianzalima.webp'
-import atlanta from '../../public/clubs/escudo_atlanta.webp'
-import junior from '../../public/clubs/escudo_junior.webp'
-import estudiantes from '../../public/clubs/escudo_estudiantes.webp'
-import cruzAzul from '../../public/clubs/escudo_cruzazul.webp'
-import talleres from '../../public/clubs/escudo_talleres.webp'
-import platense from '../../public/clubs/escudo_platense.webp'
-import depRiestra from '../../public/clubs/escudo_riestra.webp'
+// Archivo de datos puro (sin imports de imágenes): lo leen el panel y
+// también las funciones de Netlify que sincronizan con API-Football.
+//
+// `crest` es la ruta pública del escudo dentro de public/clubs/.
+// `apiTeamId` es el ID del equipo en API-Football. Se busca desde el
+// panel en /sincronizacion → Clubes. Con null, el club no se sincroniza
+// y se sigue cargando a mano como siempre.
 
 export const clubs = [
   {
@@ -21,7 +14,8 @@ export const clubs = [
     country: 'Perú',
     competition: 'Liga 1',
     stadium: 'Estadio Monumental "U"',
-    crest: universitario,
+    crest: '/clubs/escudo_universitario.webp',
+    apiTeamId: null,
   },
   {
     id: 'platense',
@@ -29,7 +23,8 @@ export const clubs = [
     country: 'Argentina',
     competition: 'Liga Profesional',
     stadium: 'Estadio Ciudad de Vicente López',
-    crest: platense,
+    crest: '/clubs/escudo_platense.webp',
+    apiTeamId: null,
   },    
   {
     id: 'cusco_fc',
@@ -37,7 +32,8 @@ export const clubs = [
     country: 'Perú',
     competition: 'Liga 1',
     stadium: 'Estadio Inca Garcilaso de la Vega',
-    crest: cusco,
+    crest: '/clubs/escudo_cusco.webp',
+    apiTeamId: null,
   },
   {
     id: 'alianza_lima',
@@ -45,7 +41,8 @@ export const clubs = [
     country: 'Perú',
     competition: 'Liga 1',
     stadium: 'Estadio Alejandro Villanueva',
-    crest: alianza,
+    crest: '/clubs/escudo_alianzalima.webp',
+    apiTeamId: null,
   },
   {
     id: 'cruz_azul',
@@ -53,7 +50,8 @@ export const clubs = [
     country: 'México',
     competition: 'Liga MX',
     stadium: 'Estadio Azteca',
-    crest: cruzAzul,
+    crest: '/clubs/escudo_cruzazul.webp',
+    apiTeamId: null,
   },
   {
     id: 'fbc_melgar',
@@ -61,7 +59,8 @@ export const clubs = [
     country: 'Perú',
     competition: 'Liga 1',
     stadium: 'Estadio Monumental de la UNSA',
-    crest: melgar,
+    crest: '/clubs/escudo_melgar.webp',
+    apiTeamId: null,
   },
   {
     id: 'emelec',
@@ -69,7 +68,8 @@ export const clubs = [
     country: 'Ecuador',
     competition: 'LigaPro Serie A',
     stadium: 'Estadio George Capwell',
-    crest: emelec,
+    crest: '/clubs/escudo_emelec.webp',
+    apiTeamId: null,
   },
   {
     id: 'junior',
@@ -77,7 +77,8 @@ export const clubs = [
     country: 'Colombia',
     competition: 'Liga BetPlay Dimayor',
     stadium: 'Estadio Atanasio Girardot',
-    crest: junior,
+    crest: '/clubs/escudo_junior.webp',
+    apiTeamId: null,
   },
   {
     id: 'deportes_la_serena',
@@ -85,7 +86,8 @@ export const clubs = [
     country: 'Chile',
     competition: 'Liga de Primera',
     stadium: 'Estadio La Portada',
-    crest: serena,
+    crest: '/clubs/escudo_serena.webp',
+    apiTeamId: null,
   },
   {
     id: 'estudiantes_lp',
@@ -93,7 +95,8 @@ export const clubs = [
     country: 'Argentina',
     competition: 'Liga Profesional',
     stadium: 'Estadio Jorge Luis Hirschi',
-    crest: estudiantes,
+    crest: '/clubs/escudo_estudiantes.webp',
+    apiTeamId: null,
   },
   {
     id: 'atlanta',
@@ -101,7 +104,8 @@ export const clubs = [
     country: 'Argentina',
     competition: 'Primera Nacional',
     stadium: 'Estadio Don León Kolbowski',
-    crest: atlanta,
+    crest: '/clubs/escudo_atlanta.webp',
+    apiTeamId: null,
   },
   {
     id: 'talleres',
@@ -109,7 +113,8 @@ export const clubs = [
     country: 'Argentina',
     competition: 'Liga Profesional',
     stadium: 'Estadio Mario Alberto Kempes',
-    crest: talleres,
+    crest: '/clubs/escudo_talleres.webp',
+    apiTeamId: null,
   },
   {
     id: 'dep_riestra',
@@ -117,7 +122,8 @@ export const clubs = [
     country: 'Argentina', 
     competition: 'Liga Profesional',
     stadium: 'Estadio Guillermo Laza',
-    crest: depRiestra,
+    crest: '/clubs/escudo_riestra.webp',
+    apiTeamId: null,
   }
 ]
 
