@@ -66,7 +66,8 @@ export default async (req) => {
       }
 
       case 'players': {
-        const q = (params.get('q') || '').trim()
+        // La API sólo acepta letras sin tildes en la búsqueda por apellido.
+        const q = (params.get('q') || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').trim()
         if (q.length < 3) return json(400, { error: 'Escribí al menos 3 letras.' })
         const res = await api.get('/players/profiles', { search: q })
         return json(200, {
