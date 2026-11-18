@@ -15,7 +15,7 @@ export const clubs = [
     competition: 'Liga 1',
     stadium: 'Estadio Monumental "U"',
     crest: '/clubs/escudo_universitario.webp',
-    apiTeamId: null,
+    apiTeamId: 2540,
   },
   {
     id: 'platense',
@@ -24,7 +24,7 @@ export const clubs = [
     competition: 'Liga Profesional',
     stadium: 'Estadio Ciudad de Vicente López',
     crest: '/clubs/escudo_platense.webp',
-    apiTeamId: null,
+    apiTeamId: 1064,
   },    
   {
     id: 'cusco_fc',
@@ -33,7 +33,7 @@ export const clubs = [
     competition: 'Liga 1',
     stadium: 'Estadio Inca Garcilaso de la Vega',
     crest: '/clubs/escudo_cusco.webp',
-    apiTeamId: null,
+    apiTeamId: 10013,
   },
   {
     id: 'alianza_lima',
@@ -42,7 +42,7 @@ export const clubs = [
     competition: 'Liga 1',
     stadium: 'Estadio Alejandro Villanueva',
     crest: '/clubs/escudo_alianzalima.webp',
-    apiTeamId: null,
+    apiTeamId: 2553,
   },
   {
     id: 'cruz_azul',
@@ -51,7 +51,7 @@ export const clubs = [
     competition: 'Liga MX',
     stadium: 'Estadio Azteca',
     crest: '/clubs/escudo_cruzazul.webp',
-    apiTeamId: null,
+    apiTeamId: 2295,
   },
   {
     id: 'fbc_melgar',
@@ -60,7 +60,7 @@ export const clubs = [
     competition: 'Liga 1',
     stadium: 'Estadio Monumental de la UNSA',
     crest: '/clubs/escudo_melgar.webp',
-    apiTeamId: null,
+    apiTeamId: 2554,
   },
   {
     id: 'emelec',
@@ -69,7 +69,7 @@ export const clubs = [
     competition: 'LigaPro Serie A',
     stadium: 'Estadio George Capwell',
     crest: '/clubs/escudo_emelec.webp',
-    apiTeamId: null,
+    apiTeamId: 1148,
   },
   {
     id: 'junior',
@@ -78,7 +78,7 @@ export const clubs = [
     competition: 'Liga BetPlay Dimayor',
     stadium: 'Estadio Atanasio Girardot',
     crest: '/clubs/escudo_junior.webp',
-    apiTeamId: null,
+    apiTeamId: 1135,
   },
   {
     id: 'deportes_la_serena',
@@ -87,7 +87,7 @@ export const clubs = [
     competition: 'Liga de Primera',
     stadium: 'Estadio La Portada',
     crest: '/clubs/escudo_serena.webp',
-    apiTeamId: null,
+    apiTeamId: 2341,
   },
   {
     id: 'estudiantes_lp',
@@ -96,7 +96,7 @@ export const clubs = [
     competition: 'Liga Profesional',
     stadium: 'Estadio Jorge Luis Hirschi',
     crest: '/clubs/escudo_estudiantes.webp',
-    apiTeamId: null,
+    apiTeamId: 450,
   },
   {
     id: 'atlanta',
@@ -105,7 +105,7 @@ export const clubs = [
     competition: 'Primera Nacional',
     stadium: 'Estadio Don León Kolbowski',
     crest: '/clubs/escudo_atlanta.webp',
-    apiTeamId: null,
+    apiTeamId: 1948,
   },
   {
     id: 'talleres',
@@ -114,7 +114,7 @@ export const clubs = [
     competition: 'Liga Profesional',
     stadium: 'Estadio Mario Alberto Kempes',
     crest: '/clubs/escudo_talleres.webp',
-    apiTeamId: null,
+    apiTeamId: 456,
   },
   {
     id: 'dep_riestra',
@@ -123,7 +123,18 @@ export const clubs = [
     competition: 'Liga Profesional',
     stadium: 'Estadio Guillermo Laza',
     crest: '/clubs/escudo_riestra.webp',
-    apiTeamId: null,
+    // ID del equipo de reserva en API-Football.
+    apiTeamId: 22937,
+  },
+  {
+    id: 'velez',
+    name: 'Vélez Sarsfield',
+    country: 'Argentina',
+    competition: 'Liga Profesional',
+    stadium: 'Estadio José Amalfitani',
+    // Falta el escudo en public/clubs/: mientras tanto se ven las iniciales.
+    crest: '/clubs/escudo_velez.webp',
+    apiTeamId: 438,
   }
 ]
 

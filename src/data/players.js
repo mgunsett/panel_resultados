@@ -35,7 +35,7 @@ export const players = [
   {
     slug: 'ronaldo_martinez',
     name: 'Ronaldo Martínez',
-    clubId: 'talleres',
+    clubId: 'velez',
     photo: '/players/ronaldo_martinez.webp',
     apiPlayerId: null,
   },
