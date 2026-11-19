@@ -19,7 +19,7 @@ import {
 // Consumo por pasada: 2 requests por club, más 1 por club en los días
 // en que ese club jugó. Con 13 clubes: ~26 requests por pasada.
 
-const CONCURRENCY = 4
+const CONCURRENCY = 3
 
 async function mapLimit(items, limit, fn) {
   const results = []

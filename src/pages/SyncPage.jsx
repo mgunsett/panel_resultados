@@ -103,15 +103,51 @@ function Stat({ label, value, hint }) {
 }
 
 // ── Sincronizar ──
+// Sincroniza club por club (una llamada a la función por club) en vez
+// de todo junto: cada llamada termina en un par de segundos, lejos del
+// timeout de Netlify, y los requests a la API quedan espaciados.
 function SyncCard() {
-  const { loading, data, run } = useApiAction()
+  const [loading, setLoading] = useState(false)
+  const [progress, setProgress] = useState(null)
+  const [data, setData] = useState(null)
   const [confirm, setConfirm] = useState(false)
   const toast = useToast()
 
   const sync = async (dryRun) => {
     setConfirm(false)
-    const res = await run('sync', dryRun ? { dryRun: 1 } : {}, { method: 'POST' })
-    if (res && !dryRun) toast({ title: 'Sincronización terminada', status: 'success', duration: 3000 })
+    setLoading(true)
+    setData(null)
+    const all = getClubsWithPlayers()
+    const targets = all.filter((c) => c.apiTeamId)
+    const report = {
+      dryRun,
+      clubs: [],
+      clubsWithoutApiId: all.filter((c) => !c.apiTeamId).map((c) => c.name),
+      usage: { requestsUsed: 0, remainingToday: null },
+    }
+    try {
+      for (const [i, club] of targets.entries()) {
+        setProgress(`${club.name} (${i + 1}/${targets.length})`)
+        try {
+          const res = await callApiFootball('sync', { club: club.id, ...(dryRun ? { dryRun: 1 } : {}) }, { method: 'POST' })
+          report.clubs.push(...res.clubs)
+          report.usage.requestsUsed += res.usage?.requestsUsed || 0
+          if (res.usage?.remainingToday != null) report.usage.remainingToday = res.usage.remainingToday
+        } catch (err) {
+          report.clubs.push({ clubId: club.id, club: club.name, error: err.message })
+        }
+        setData({ ...report, clubs: [...report.clubs] })
+      }
+      const failed = report.clubs.filter((c) => c.error).length
+      toast({
+        title: failed ? `Terminó con ${failed} club(es) con error` : dryRun ? 'Prueba terminada' : 'Sincronización terminada',
+        status: failed ? 'warning' : 'success',
+        duration: 4000,
+      })
+    } finally {
+      setLoading(false)
+      setProgress(null)
+    }
   }
 
   return (
@@ -135,7 +171,12 @@ function SyncCard() {
         Los partidos marcados con <b>Bloquear</b> nunca se pisan.
       </Text>
 
-      {loading && <Spinner color="brand.amber" size="sm" />}
+      {loading && (
+        <HStack mb={3}>
+          <Spinner color="brand.amber" size="sm" />
+          <Text fontSize="sm" color="brand.gray">{progress}</Text>
+        </HStack>
+      )}
       {data && <SyncReport report={data} />}
 
       <ConfirmDialog
