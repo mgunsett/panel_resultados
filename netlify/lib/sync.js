@@ -1,6 +1,7 @@
 import {
   clubTimezone, pickLastFinished, pickNext, fixtureToMatchPayload,
   matchContentChanged, playerStatsFromFixture,
+  currentSeason, seasonStatsFromPlayer, seasonContentChanged,
 } from './mappers.js'
 
 // ─── SINCRONIZACIÓN CON API-FOOTBALL ─────────────────────────────
@@ -12,14 +13,20 @@ import {
 //      `apiPlayerId`, pide las estadísticas de ese partido (1 request
 //      por club) y las guarda en players/{slug}/stats/last. La ficha
 //      anterior pasa a players/{slug}/stats/prev.
+//   4. Totales de la temporada en curso por jugador con `apiPlayerId`
+//      en players/{slug}/stats/season (1 request por jugador). Se piden
+//      cuando hubo partido nuevo, cuando falta el documento o cambió la
+//      temporada, y si no, una vez por día.
 //
 // Nunca pisa un documento con `locked: true` (se marca desde el panel)
 // y no reescribe nada si el contenido no cambió.
 //
 // Consumo por pasada: 2 requests por club, más 1 por club en los días
-// en que ese club jugó. Con 13 clubes: ~26 requests por pasada.
+// en que ese club jugó, más 1 por jugador cuando tocan los totales de
+// temporada. Con 14 clubes y 16 jugadores: ~30 a ~60 requests por pasada.
 
 const CONCURRENCY = 3
+const SEASON_REFRESH_MS = 24 * 60 * 60 * 1000
 
 async function mapLimit(items, limit, fn) {
   const results = []
@@ -48,6 +55,7 @@ async function syncClub({ db, api, club, clubPlayers, dryRun, now }) {
     writes: [],
     skippedLocked: [],
     stats: 'sin jugadores con apiPlayerId',
+    season: 'sin jugadores con apiPlayerId',
   }
 
   const timezone = clubTimezone(club)
@@ -114,6 +122,43 @@ async function syncClub({ db, api, club, clubPlayers, dryRun, now }) {
         report.stats = `actualizadas para ${pending.length} jugador(es)`
       }
     }
+  }
+
+  // ── Totales de la temporada en curso ──
+  if (statPlayers.length) {
+    const season = currentSeason(now)
+    const newMatch = writes.some((w) => w.path.endsWith('/stats/last'))
+    const updated = []
+    const notYet = []
+    for (const player of statPlayers) {
+      const path = `players/${player.slug}/stats/season`
+      const current = await readDoc(db, path)
+      if (current?.locked) {
+        report.skippedLocked.push(`${player.slug}/season`)
+        continue
+      }
+      const stale = !current
+        || current.temporada !== season
+        || !current.updated_at
+        || Date.parse(now) - Date.parse(current.updated_at) >= SEASON_REFRESH_MS
+      if (!newMatch && !stale) continue
+
+      const response = await api.get('/players', { id: player.apiPlayerId, season })
+      const totals = seasonStatsFromPlayer(response, season, now)
+      // Sin partidos en la temporada (pretemporada): dejamos los totales
+      // anteriores en vez de borrarlos.
+      if (!totals) { notYet.push(player.slug); continue }
+      // Aunque no haya cambios, refrescamos updated_at para no volver a
+      // pedirlo hasta mañana.
+      if (seasonContentChanged(current, totals) || stale) {
+        writes.push({ path, data: totals })
+        updated.push(player.slug)
+      }
+    }
+    const parts = []
+    if (updated.length) parts.push(`${season} actualizada para ${updated.length} jugador(es)`)
+    if (notYet.length) parts.push(`sin partidos en ${season}: ${notYet.join(', ')}`)
+    report.season = parts.length ? parts.join(' · ') : 'al día'
   }
 
   report.writes = writes.map((w) => w.path)

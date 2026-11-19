@@ -177,3 +177,99 @@ export function playerStatsFromFixture(fx, fixturePlayers, club, apiPlayerId, no
     rojas: num(s.cards?.red),
   }
 }
+
+// ─── TOTALES DE LA TEMPORADA ─────────────────────────────────────
+// Temporada en curso. Las ligas de nuestros clubes son de año
+// calendario, así que en API-Football la temporada es el año actual.
+export function currentSeason(now = new Date().toISOString()) {
+  return Number(String(now).slice(0, 4))
+}
+
+const SEASON_POSITIONS = { Goalkeeper: 'ARQ', Defender: 'DEF', Midfielder: 'MED', Attacker: 'DEL' }
+
+// Suma un campo en todas las competencias. Si ninguna lo trae, null
+// (la landing no muestra el dato) en vez de un 0 inventado.
+function sumField(list, get) {
+  const values = list.map(get).map(num).filter((v) => v !== null)
+  return values.length ? values.reduce((a, b) => a + b, 0) : null
+}
+
+// Promedio ponderado (rating por minutos, precisión de pases por pases).
+function weighted(list, getValue, getWeight) {
+  let total = 0
+  let weight = 0
+  list.forEach((s) => {
+    const v = num(getValue(s))
+    const w = num(getWeight(s))
+    if (v === null || !w) return
+    total += v * w
+    weight += w
+  })
+  return weight ? Math.round((total / weight) * 100) / 100 : null
+}
+
+// De `/players?id=X&season=Y` arma los totales del jugador en la
+// temporada, sumando todas las competencias (liga, copas,
+// internacionales) y los clubes por los que haya pasado. Si todavía
+// no jugó ningún partido devuelve null y no se escribe nada.
+export function seasonStatsFromPlayer(playerResponse, season, now = new Date().toISOString()) {
+  const all = playerResponse?.[0]?.statistics || []
+  const list = all.filter((s) => num(s?.games?.appearences) > 0 && (!s.league?.season || s.league.season === season))
+  if (!list.length) return null
+
+  const main = [...list].sort((a, b) => (num(b.games.minutes) || 0) - (num(a.games.minutes) || 0))[0]
+
+  return {
+    temporada: season,
+    partidos: sumField(list, (s) => s.games?.appearences),
+    titular: sumField(list, (s) => s.games?.lineups),
+    minutos: sumField(list, (s) => s.games?.minutes),
+    posicion: SEASON_POSITIONS[main.games?.position] || null,
+    rating: weighted(list, (s) => s.games?.rating, (s) => s.games?.minutes),
+    goles: sumField(list, (s) => s.goals?.total) ?? 0,
+    asistencias: sumField(list, (s) => s.goals?.assists) ?? 0,
+    golesRec: sumField(list, (s) => s.goals?.conceded),
+    atajadas: sumField(list, (s) => s.goals?.saves),
+    tiros: sumField(list, (s) => s.shots?.total),
+    tirosArco: sumField(list, (s) => s.shots?.on),
+    pases: sumField(list, (s) => s.passes?.total),
+    pasesClave: sumField(list, (s) => s.passes?.key),
+    // En los totales de temporada `accuracy` es un porcentaje.
+    precisionPases: weighted(list, (s) => s.passes?.accuracy, (s) => s.passes?.total),
+    quites: sumField(list, (s) => s.tackles?.total),
+    intercepciones: sumField(list, (s) => s.tackles?.interceptions),
+    duelos: sumField(list, (s) => s.duels?.total),
+    duelosG: sumField(list, (s) => s.duels?.won),
+    regates: sumField(list, (s) => s.dribbles?.success),
+    regatesInt: sumField(list, (s) => s.dribbles?.attempts),
+    amarillas: sumField(list, (s) => s.cards?.yellow),
+    rojas: sumField(list, (s) => (num(s.cards?.red) || 0) + (num(s.cards?.yellowred) || 0)),
+    competiciones: list.map((s) => ({
+      nombre: s.league?.name || '',
+      logo: s.league?.logo || null,
+      club: s.team?.name || '',
+      partidos: num(s.games?.appearences),
+      minutos: num(s.games?.minutes),
+      goles: num(s.goals?.total) ?? 0,
+      asistencias: num(s.goals?.assists) ?? 0,
+    })),
+    fuente: 'API-Football',
+    source: 'api',
+    locked: false,
+    updated_at: now,
+  }
+}
+
+// ¿Cambió algo además de la fecha de actualización?
+export function seasonContentChanged(current, next) {
+  if (!current) return true
+  // Firestore no conserva el orden de las claves: comparamos ordenado.
+  const stable = (v) => {
+    if (Array.isArray(v)) return v.map(stable)
+    if (v && typeof v === 'object') {
+      return Object.fromEntries(Object.keys(v).filter((k) => k !== 'updated_at').sort().map((k) => [k, stable(v[k])]))
+    }
+    return v
+  }
+  return JSON.stringify(stable(current)) !== JSON.stringify(stable(next))
+}
