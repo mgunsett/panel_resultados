@@ -43,10 +43,19 @@ export function normalizeName(name) {
     .trim()
 }
 
-// Busca al jugador dentro del plantel que devuelve la API: gana el que
-// comparta el apellido (última palabra del nombre en players.js).
+// Busca al jugador dentro del plantel que devuelve la API. Para que
+// cuente como coincidencia tiene que compartir un apellido Y la inicial
+// del nombre: así "Juan Pablo Ruiz Gómez" no se empareja con "Luis
+// Fernando Gómez Angulo". Es sólo una sugerencia: el panel siempre deja
+// cambiarla a mano.
 export function guessSquadMatch(playerName, squad) {
-  const words = normalizeName(playerName).split(' ')
-  const last = words[words.length - 1]
-  return squad.find((p) => normalizeName(p.name).split(' ').includes(last)) || null
+  const words = normalizeName(playerName).split(' ').filter(Boolean)
+  if (!words.length) return null
+  const initial = words[0][0]
+  const surnames = words.slice(1).filter((w) => w.length > 2)
+  return squad.find((p) => {
+    const api = normalizeName(p.name).split(' ').filter(Boolean)
+    if (!api.length || api[0][0] !== initial) return false
+    return api.slice(1).some((w) => surnames.includes(w))
+  }) || null
 }
