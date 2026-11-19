@@ -226,6 +226,46 @@ function ManualPlayerPick({ player, squad }) {
   )
 }
 
+function PlayerRow({ player: p, squad }) {
+  const match = guessSquadMatch(p.name, squad)
+  const [manual, setManual] = useState(false)
+
+  let status
+  if (p.apiPlayerId) {
+    status = <Badge colorScheme="green" fontFamily="mono">apiPlayerId {p.apiPlayerId}</Badge>
+  } else if (p.role === 'DT') {
+    status = <Text color="brand.gray" fontSize="xs">DT: no lleva estadísticas</Text>
+  } else if (match) {
+    status = (
+      <>
+        <Text color="brand.gray" flex={1}>→ sugerido: {match.name} #{match.number ?? '—'}</Text>
+        <CopyId value={`apiPlayerId: ${match.id},`} label={`ID ${match.id}`} />
+      </>
+    )
+  } else {
+    status = <Text color="brand.amber" fontSize="xs" flex={1}>No coincide con nadie del plantel</Text>
+  }
+
+  // La búsqueda manual está siempre a mano (salvo DT): la sugerencia
+  // automática puede equivocarse, y un ID ya cargado puede estar mal.
+  const canPick = p.role !== 'DT'
+  const open = manual || (!p.apiPlayerId && !match && canPick)
+
+  return (
+    <Flex align="center" gap={2} fontSize="sm" wrap="wrap">
+      <Text color="white" minW="160px">{p.name}</Text>
+      {status}
+      {canPick && !open && (
+        <Button {...btn} variant="ghost" color="brand.orange" onClick={() => setManual(true)}
+          _hover={{ bg: 'brand.orangeSoft' }}>
+          {p.apiPlayerId ? 'Cambiar' : 'No es él: buscar a mano'}
+        </Button>
+      )}
+      {open && <ManualPlayerPick player={p} squad={squad} />}
+    </Flex>
+  )
+}
+
 // ── Mapeo de IDs ──
 function ClubMapping({ club }) {
   const [q, setQ] = useState(club.name)
@@ -272,28 +312,9 @@ function ClubMapping({ club }) {
           </Button>
           {squad.data && (
             <VStack align="stretch" spacing={1} mt={2}>
-              {club.players.map((p) => {
-                const match = guessSquadMatch(p.name, squad.data.results)
-                return (
-                  <Flex key={p.slug} align="center" gap={2} fontSize="sm" wrap="wrap">
-                    <Text color="white" minW="160px">{p.name}</Text>
-                    {p.apiPlayerId ? (
-                      <Badge colorScheme="green" fontFamily="mono">apiPlayerId {p.apiPlayerId}</Badge>
-                    ) : p.role === 'DT' ? (
-                      <Text color="brand.gray" fontSize="xs">DT: no lleva estadísticas</Text>
-                    ) : match ? (
-                      <>
-                        <Text color="brand.gray" flex={1}>→ {match.name} #{match.number ?? '—'}</Text>
-                        <CopyId value={`apiPlayerId: ${match.id},`} label={`ID ${match.id}`} />
-                      </>
-                    ) : (
-                      <>
-                        <Text color="brand.amber" fontSize="xs">No coincide con nadie del plantel: elegilo o buscalo a mano</Text>
-                        <ManualPlayerPick player={p} squad={squad.data.results} />
-                      </>
-                    )}
-                  </Flex>
-                )
+              {club.players.map((p) => (
+                <PlayerRow key={p.slug} player={p} squad={squad.data.results} />
+              ))}
               })}
             </VStack>
           )}
