@@ -1,5 +1,5 @@
 import { Box, VStack, HStack, Flex, Text, Button, Divider } from '@chakra-ui/react'
-import { FiHome, FiUsers, FiShield, FiLogOut, FiRefreshCw } from 'react-icons/fi'
+import { FiHome, FiUsers, FiShield, FiLogOut, FiRefreshCw, FiBarChart2 } from 'react-icons/fi'
 import { useLocation, useNavigate } from 'react-router-dom'
 import { useAuth } from '../../lib/auth'
 import { players, getClubsWithPlayers } from '../../data/players'
@@ -10,6 +10,7 @@ import BrandLogo from '../ui/BrandLogo'
 const NAV_ITEMS = [
   { to: '/', label: 'Inicio', icon: FiHome, exact: true },
   { to: '/jugadores', label: 'Jugadores', icon: FiUsers, extraPaths: ['/jugador'] },
+  { to: '/estadisticas', label: 'Estadísticas', icon: FiBarChart2 },
   { to: '/clubes', label: 'Clubes', icon: FiShield, extraPaths: ['/club'] },
   { to: '/sincronizacion', label: 'Sincronización', icon: FiRefreshCw },
 ]

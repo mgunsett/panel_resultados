@@ -3,8 +3,8 @@ import {
   Box, Flex, HStack, VStack, Text, Button, Input, Badge, Image, Code,
   SimpleGrid, Spinner, Select, useClipboard, useToast,
 } from '@chakra-ui/react'
-import { FiActivity, FiRefreshCw, FiEye, FiSearch, FiCopy, FiCheck, FiUsers } from 'react-icons/fi'
-import { getClubsWithPlayers } from '../data/players'
+import { FiActivity, FiRefreshCw, FiEye, FiSearch, FiCopy, FiCheck, FiUsers, FiDatabase } from 'react-icons/fi'
+import { getClubsWithPlayers, players } from '../data/players'
 import { callApiFootball, guessSquadMatch } from '../lib/apiFootball'
 import PageContainer from '../components/layout/PageContainer'
 import PageHeader from '../components/layout/PageHeader'
@@ -220,6 +220,170 @@ function SyncReport({ report }) {
   )
 }
 
+// ── Completar historial ──
+// La sincronización sólo suma el partido nuevo a stats/history_{año}.
+// Esto trae lo anterior: club por club, en tandas de pocos partidos
+// (cada tanda es una llamada corta a la función), hasta que no quede
+// ninguno. Lo ya guardado no se vuelve a pedir, así que se puede cortar
+// y retomar sin gastar de más.
+const THIS_YEAR = new Date().getFullYear()
+const MAX_ROUNDS_PER_CLUB = 25
+
+function HistoryCard() {
+  const toast = useToast()
+  const [season, setSeason] = useState(THIS_YEAR)
+  const [from, setFrom] = useState(THIS_YEAR - 3)
+  const [running, setRunning] = useState(null) // 'history' | 'seasons'
+  const [progress, setProgress] = useState('')
+  const [log, setLog] = useState([])
+  const [confirm, setConfirm] = useState(null)
+
+  const clubs = getClubsWithPlayers().filter((c) => c.apiTeamId && c.players.some((p) => p.apiPlayerId))
+  const statPlayers = players.filter((p) => p.apiPlayerId)
+
+  const runHistory = async () => {
+    setConfirm(null)
+    setRunning('history')
+    setLog([])
+    let requests = 0
+    try {
+      for (const [i, club] of clubs.entries()) {
+        let line = { club: club.name }
+        for (let round = 0; round < MAX_ROUNDS_PER_CLUB; round++) {
+          setProgress(`${club.name} (${i + 1}/${clubs.length})${round ? ` · tanda ${round + 1}` : ''}`)
+          try {
+            const res = await callApiFootball('history', { club: club.id, season }, { method: 'POST' })
+            requests += res.usage?.requestsUsed || 0
+            line = { club: club.name, total: res.total, remaining: res.remaining, withoutData: (line.withoutData || 0) + (res.withoutData || 0) }
+            if (!res.remaining) break
+          } catch (err) {
+            line = { ...line, error: err.message }
+            break
+          }
+        }
+        setLog((prev) => [...prev, line])
+      }
+      toast({ title: `Historial ${season} listo`, description: `${requests} requests usados`, status: 'success', duration: 5000 })
+    } finally {
+      setRunning(null)
+      setProgress('')
+    }
+  }
+
+  const runSeasons = async () => {
+    setConfirm(null)
+    setRunning('seasons')
+    setLog([])
+    const years = Array.from({ length: THIS_YEAR - from }, (_, k) => THIS_YEAR - 1 - k)
+    try {
+      for (const [i, p] of statPlayers.entries()) {
+        const found = []
+        let error = null
+        for (const y of years) {
+          setProgress(`${p.name} (${i + 1}/${statPlayers.length}) · ${y}`)
+          try {
+            const res = await callApiFootball('season', { player: p.slug, season: y }, { method: 'POST' })
+            if (res.found) found.push(y)
+          } catch (err) {
+            error = err.message
+            break
+          }
+        }
+        setLog((prev) => [...prev, { club: p.name, years: found, error }])
+      }
+      toast({ title: 'Temporadas anteriores listas', status: 'success', duration: 4000 })
+    } finally {
+      setRunning(null)
+      setProgress('')
+    }
+  }
+
+  const yearOptions = [THIS_YEAR, THIS_YEAR - 1, THIS_YEAR - 2]
+
+  return (
+    <Card title="Completar historial" icon={FiDatabase}>
+      <Text fontSize="sm" color="brand.gray" mb={4}>
+        Los partidos nuevos y los totales del año se guardan solos. Esto completa lo anterior para la ficha de cada
+        jugador y la sección Estadísticas. No toca nada de lo que leen las landings.
+      </Text>
+
+      <VStack align="stretch" spacing={3}>
+        <Flex gap={3} align="center" wrap="wrap" bg="brand.dark" borderRadius="md" p={3} border="1px solid" borderColor="brand.brownDark">
+          <Box flex={1} minW="220px">
+            <Text fontFamily="mono" fontSize="sm" color="white" textTransform="uppercase" letterSpacing="wider">Partidos de la temporada</Text>
+            <Text fontSize="xs" color="brand.gray">
+              {clubs.length} clubes · ~1 request por partido del club (unos 40 a 50 por club). Se usa el club actual del
+              jugador: si cambió de club en el año, los partidos con el anterior no se traen.
+            </Text>
+          </Box>
+          <Select {...inputStyle} h="32px" size="sm" w="110px" value={season} onChange={(e) => setSeason(Number(e.target.value))}>
+            {yearOptions.map((y) => <option key={y} value={y} style={{ background: '#1E1B19' }}>{y}</option>)}
+          </Select>
+          <Button {...btn} bg="brand.orange" color="brand.brown" isLoading={running === 'history'} isDisabled={Boolean(running)}
+            onClick={() => setConfirm('history')} _hover={{ bg: 'brand.orangeDark', color: 'white' }}>
+            Completar partidos
+          </Button>
+        </Flex>
+
+        <Flex gap={3} align="center" wrap="wrap" bg="brand.dark" borderRadius="md" p={3} border="1px solid" borderColor="brand.brownDark">
+          <Box flex={1} minW="220px">
+            <Text fontFamily="mono" fontSize="sm" color="white" textTransform="uppercase" letterSpacing="wider">Temporadas anteriores</Text>
+            <Text fontSize="xs" color="brand.gray">
+              Totales por año de {statPlayers.length} jugadores, con todos los clubes por los que pasaron · 1 request por jugador por año.
+            </Text>
+          </Box>
+          <Select {...inputStyle} h="32px" size="sm" w="130px" value={from} onChange={(e) => setFrom(Number(e.target.value))}>
+            {[1, 2, 3, 4, 5].map((k) => (
+              <option key={k} value={THIS_YEAR - k} style={{ background: '#1E1B19' }}>Desde {THIS_YEAR - k}</option>
+            ))}
+          </Select>
+          <Button {...btn} bg="brand.amber" color="brand.brown" isLoading={running === 'seasons'} isDisabled={Boolean(running)}
+            onClick={() => setConfirm('seasons')}>
+            Traer temporadas
+          </Button>
+        </Flex>
+      </VStack>
+
+      {running && (
+        <HStack mt={4}>
+          <Spinner color="brand.amber" size="sm" />
+          <Text fontSize="sm" color="brand.gray">{progress}</Text>
+        </HStack>
+      )}
+      {log.length > 0 && (
+        <VStack align="stretch" spacing={1} mt={4} fontSize="sm">
+          {log.map((l) => (
+            <Flex key={l.club} gap={2}>
+              <Text color="white" minW="160px">{l.club}</Text>
+              {l.error ? <Text color="brand.rec">{l.error}</Text>
+                : l.years ? <Text color="brand.gray">{l.years.length ? l.years.join(', ') : 'sin datos en esos años'}</Text>
+                  : (
+                    <Text color="brand.gray">
+                      {l.total ?? 0} partidos{l.remaining ? ` · faltan ${l.remaining} (volvé a correrlo)` : ' · completo'}
+                      {l.withoutData ? ` · ${l.withoutData} sin datos en la API` : ''}
+                    </Text>
+                  )}
+            </Flex>
+          ))}
+        </VStack>
+      )}
+
+      <ConfirmDialog
+        isOpen={confirm === 'history'} onClose={() => setConfirm(null)} onConfirm={runHistory}
+        tone="brand" confirmLabel="Completar"
+        title={`¿Completar los partidos de ${season}?`}
+        description={`Se piden a API-Football los partidos que falten de ${clubs.length} clubes, en tandas cortas. La primera vez son unos ${clubs.length * 45} requests; después, sólo los que falten. Puede tardar varios minutos: dejá esta pestaña abierta.`}
+      />
+      <ConfirmDialog
+        isOpen={confirm === 'seasons'} onClose={() => setConfirm(null)} onConfirm={runSeasons}
+        tone="brand" confirmLabel="Traer"
+        title={`¿Traer temporadas ${from} a ${THIS_YEAR - 1}?`}
+        description={`Son ${statPlayers.length * (THIS_YEAR - from)} requests (${statPlayers.length} jugadores × ${THIS_YEAR - from} años).`}
+      />
+    </Card>
+  )
+}
+
 // Para cuando el apellido no coincide con el de la API (ej: el jugador
 // figura con otro apellido) o no aparece en el plantel (ej: reservas):
 // elegir a mano del plantel completo, o buscar por apellido en toda la
@@ -357,7 +521,6 @@ function ClubMapping({ club }) {
               {club.players.map((p) => (
                 <PlayerRow key={p.slug} player={p} squad={squad.data.results} />
               ))}
-              })}
             </VStack>
           )}
         </>
@@ -376,6 +539,7 @@ export default function SyncPage() {
 
       <StatusCard />
       <SyncCard />
+      <HistoryCard />
 
       <Card title={`IDs de API-Football · ${mappedClubs}/${clubs.length} clubes`} icon={FiSearch}>
         <Text fontSize="sm" color="brand.gray" mb={4}>
