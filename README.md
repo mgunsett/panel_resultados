@@ -115,6 +115,12 @@ del último partido de cada jugador se actualizan solos desde
   `rating`, `goles`, `asistencias`, `pasesOk`, `duelosG`…). Cuando hay un
   partido nuevo, la ficha anterior pasa a **`stats/prev`**. Si no jugó,
   queda `jugo: false`.
+- **`stats/season`** (nuevo): totales del jugador en la temporada en
+  curso (`temporada: 2026`), sumando todas las competencias: `partidos`,
+  `minutos`, `goles`, `asistencias`, `rating` (promedio por minutos),
+  `tiros`, `pases`, `precisionPases`, etc., más el detalle en
+  `competiciones`. Se actualiza con cada partido nuevo y una vez por día.
+  En pretemporada (sin partidos en el año) se mantienen los anteriores.
 
 ### Reglas
 

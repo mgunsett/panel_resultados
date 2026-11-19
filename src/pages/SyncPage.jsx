@@ -206,6 +206,7 @@ function SyncReport({ report }) {
               <Text>Último: {c.last || 'sin partido terminado'}</Text>
               <Text>Próximo: {c.next || 'sin partido programado'}</Text>
               <Text>Estadísticas: {c.stats}</Text>
+              {c.season && <Text>Temporada: {c.season}</Text>}
               <Text>{c.writes.length ? `${c.writes.length} documento(s) ${report.dryRun ? 'para escribir' : 'escritos'}` : 'Sin cambios'}</Text>
               {c.skippedLocked.length > 0 && <Text color="brand.amber">Bloqueados: {c.skippedLocked.join(', ')}</Text>}
             </Box>
