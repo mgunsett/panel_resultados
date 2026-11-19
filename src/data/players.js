@@ -72,7 +72,7 @@ export const players = [
     name: 'Juan Pablo Ruiz Gómez',
     clubId: 'emelec',
     photo: '/players/jp_ruizgomez.webp',
-    apiPlayerId: null,
+    apiPlayerId: 59055,
   },
   {
     slug: 'licha_alzugaray',
