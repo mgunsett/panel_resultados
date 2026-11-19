@@ -2,6 +2,7 @@ import {
   clubTimezone, pickLastFinished, pickNext, fixtureToMatchPayload,
   matchContentChanged, playerStatsFromFixture,
   currentSeason, seasonStatsFromPlayer, seasonContentChanged,
+  fixtureSeason, historyDocId, historyEntryFromStats,
 } from './mappers.js'
 
 // ─── SINCRONIZACIÓN CON API-FOOTBALL ─────────────────────────────
@@ -118,6 +119,11 @@ async function syncClub({ db, api, club, clubPlayers, dryRun, now }) {
           const stats = playerStatsFromFixture(lastFx, fixturePlayers, club, player.apiPlayerId, now)
           if (current) writes.push({ path: `players/${player.slug}/stats/prev`, data: current })
           writes.push({ path: `players/${player.slug}/stats/last`, data: stats })
+          writes.push({
+            path: `players/${player.slug}/stats/${historyDocId(fixtureSeason(lastFx, now))}`,
+            data: { temporada: fixtureSeason(lastFx, now), partidos: { [lastFx.fixture.id]: historyEntryFromStats(stats, lastFx) }, updated_at: now },
+            merge: true,
+          })
         }
         report.stats = `actualizadas para ${pending.length} jugador(es)`
       }
@@ -152,6 +158,11 @@ async function syncClub({ db, api, club, clubPlayers, dryRun, now }) {
       // pedirlo hasta mañana.
       if (seasonContentChanged(current, totals) || stale) {
         writes.push({ path, data: totals })
+        writes.push({
+          path: `players/${player.slug}/stats/seasons`,
+          data: { temporadas: { [season]: totals }, updated_at: now },
+          merge: true,
+        })
         updated.push(player.slug)
       }
     }
@@ -167,7 +178,9 @@ async function syncClub({ db, api, club, clubPlayers, dryRun, now }) {
     // Todo el club en un solo batch: o se actualizan todos o ninguno,
     // igual que la carga por club del panel.
     const batch = db.batch()
-    writes.forEach(({ path, data }) => batch.set(db.doc(path), data))
+    // `merge` sólo en el historial y en seasons: suman una clave sin
+    // pisar los partidos o años que ya estaban.
+    writes.forEach(({ path, data, merge }) => batch.set(db.doc(path), data, merge ? { merge: true } : {}))
     await batch.commit()
   }
 

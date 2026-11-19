@@ -1,8 +1,9 @@
 # Panel Central de Jugadores
 
-Panel de administración único para cargar el **último resultado** y el **próximo
-partido** de todos los jugadores, sin tener que entrar al admin de cada landing
-por separado.
+Panel de administración general de las landings: carga del **último resultado** y
+el **próximo partido** de todos los jugadores (sin entrar al admin de cada
+landing), y la ficha de estadísticas de cada uno (temporada en curso, último
+partido, historial de partidos y temporadas anteriores) para comparar y exportar.
 
 Apunta al mismo proyecto de Firebase que las landings individuales (`cainfara`),
 namespaceado por slug: `players/{slug}/matches/{last|next}`.
@@ -40,7 +41,8 @@ VITE_FIREBASE_APP_ID=
 | --- | --- |
 | `/` | Home con la portada de LED Sports y los accesos |
 | `/jugadores` | Grilla de jugadores |
-| `/jugador/:slug` | Carga de partidos de **un** jugador |
+| `/jugador/:slug` | Ficha del jugador en pestañas: Resumen, Partidos, Temporadas y Carga manual (`?tab=carga`) |
+| `/estadisticas` | Todos los jugadores en una tabla: temporada, cada 90', último partido y todos los partidos. Filtro por club y temporada, orden por columna, exporta CSV y Excel |
 | `/clubes` | Grilla de clubes (uno por club, sin repetir) |
 | `/club/:clubId` | Carga de partidos para **todos** los jugadores del club |
 
@@ -121,6 +123,27 @@ del último partido de cada jugador se actualizan solos desde
   `tiros`, `pases`, `precisionPases`, etc., más el detalle en
   `competiciones`. Se actualiza con cada partido nuevo y una vez por día.
   En pretemporada (sin partidos en el año) se mantienen los anteriores.
+
+- **`stats/history_{año}`** (sólo panel): un mapa `partidos` con la ficha
+  de cada partido del club en esa temporada, indexado por fixtureId. La
+  sincronización suma cada partido nuevo sin requests extra.
+- **`stats/seasons`** (sólo panel): `temporadas: { 2025: {...}, 2026: {...} }`,
+  los totales de cada año con el mismo formato que `stats/season`.
+
+Todo queda dentro de `stats/`, que las reglas ya permiten: no hace falta
+redeployar reglas. Las landings no leen `history_*` ni `seasons`.
+
+### Completar historial
+
+En `/sincronizacion` → **Completar historial**:
+
+- **Completar partidos**: trae los partidos anteriores de la temporada, club
+  por club, en tandas de 6 (función `api-football?action=history`). 1 request
+  para listar + 1 por partido que falte: la primera vez, unos 45 por club
+  (~650 en total). Lo ya guardado no se vuelve a pedir. Usa el club actual
+  del jugador.
+- **Traer temporadas**: totales de años anteriores (`action=season`),
+  1 request por jugador por año.
 
 ### Reglas
 

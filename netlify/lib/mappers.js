@@ -273,3 +273,41 @@ export function seasonContentChanged(current, next) {
   }
   return JSON.stringify(stable(current)) !== JSON.stringify(stable(next))
 }
+
+// ─── HISTORIAL PARA EL PANEL ─────────────────────────────────────
+// Además de stats/last (lo que leen las landings), cada partido queda
+// guardado en players/{slug}/stats/history_{temporada}, como un mapa
+// `partidos` indexado por fixtureId. Así se puede escribir con merge
+// sin leer el documento y un mismo partido nunca se duplica.
+// Un documento por temporada mantiene el tamaño acotado (~50 partidos).
+
+// Temporada a la que pertenece un partido según la API (para ligas que
+// cruzan de año, como la de México, no siempre coincide con la fecha).
+export function fixtureSeason(fx, now = new Date().toISOString()) {
+  return num(fx?.league?.season) ?? currentSeason(fx?.fixture?.date || now)
+}
+
+export function historyDocId(season) {
+  return `history_${season}`
+}
+
+// Lo que se guarda por partido en el historial: la misma ficha de
+// stats/last sin las marcas internas de la sincronización.
+export function historyEntryFromStats(stats, fx) {
+  // eslint-disable-next-line no-unused-vars
+  const { locked, source, ...rest } = stats
+  return {
+    ...rest,
+    temporada: fixtureSeason(fx),
+    competicionLogo: fx?.league?.logo || null,
+    ronda: fx?.league?.round || null,
+  }
+}
+
+// Un partido cuyo detalle por jugador la API no publica (pasa en
+// algunas copas o ligas chicas): se guarda igual, marcado, para no
+// volver a pedirlo en cada tanda del historial.
+export function historyEntryWithoutData(fx, club, now = new Date().toISOString()) {
+  const base = playerStatsFromFixture(fx, [], club, -1, now)
+  return { ...historyEntryFromStats(base, fx), jugo: null, sinDatos: true }
+}

@@ -14,6 +14,7 @@ import PlayerDetailPage from './pages/PlayerDetailPage'
 import ClubsPage from './pages/ClubsPage'
 import ClubDetailPage from './pages/ClubDetailPage'
 import SyncPage from './pages/SyncPage'
+import StatsPage from './pages/StatsPage'
 
 // Gate general: sin sesión no se ve nada del panel.
 function Protected({ children }) {
@@ -64,6 +65,7 @@ function PanelRoutes() {
           <Route path="jugador/:slug" element={<PageTransition><PlayerDetailPage /></PageTransition>} />
           <Route path="clubes" element={<PageTransition><ClubsPage /></PageTransition>} />
           <Route path="club/:clubId" element={<PageTransition><ClubDetailPage /></PageTransition>} />
+          <Route path="estadisticas" element={<PageTransition><StatsPage /></PageTransition>} />
           <Route path="sincronizacion" element={<PageTransition><SyncPage /></PageTransition>} />
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>

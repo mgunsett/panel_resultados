@@ -13,7 +13,7 @@ export default function PlayersPage() {
         fontFamily="mono" fontSize="10px" color="brand.gray"
         textTransform="uppercase" letterSpacing="widest" mb={4}
       >
-        Elegí un jugador para cargarle partidos
+        Elegí un jugador para ver su ficha, sus estadísticas o cargarle partidos
       </Text>
 
       <PlayersGrid players={players} />

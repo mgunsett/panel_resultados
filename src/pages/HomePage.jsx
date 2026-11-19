@@ -1,8 +1,9 @@
 import { Box, Flex, VStack, SimpleGrid, Text, Image, useBreakpoint } from '@chakra-ui/react'
-import { FiUsers, FiShield } from 'react-icons/fi'
+import { FiUsers, FiShield, FiBarChart2, FiRefreshCw } from 'react-icons/fi'
 import { useNavigate } from 'react-router-dom'
 import { motion, useReducedMotion } from 'framer-motion'
 import { players, getClubsWithPlayers } from '../data/players'
+import { clubs } from '../data/clubs'
 
 import HomeShortcut from '../components/home/HomeShortcut'
 import PageContainer from '../components/layout/PageContainer'
@@ -66,7 +67,7 @@ export default function HomePage() {
                   fontFamily="mono" fontSize={{ base: '10px', md: 'lg' }} color="brand.gray"
                   textTransform="uppercase" letterSpacing="widest"
                 >
-                  Panel de Resultados
+                  Panel de administración de landings
                 </Text>
               </Flex>
             </VStack>
@@ -86,10 +87,18 @@ export default function HomePage() {
           <HomeShortcut
             icon={FiUsers}
             label="Jugadores"
-            description="Cargar partido a uno"
+            description="Ficha, estadísticas y carga"
             count={players.length}
             onClick={() => navigate('/jugadores')}
             delay={0.08}
+          />
+          <HomeShortcut
+            icon={FiBarChart2}
+            label="Estadísticas"
+            description="Comparar y exportar"
+            count={players.filter((p) => p.apiPlayerId).length}
+            onClick={() => navigate('/estadisticas')}
+            delay={0.12}
           />
           <HomeShortcut
             icon={FiShield}
@@ -98,6 +107,14 @@ export default function HomePage() {
             count={clubCount}
             onClick={() => navigate('/clubes')}
             delay={0.16}
+          />
+          <HomeShortcut
+            icon={FiRefreshCw}
+            label="Sincronización"
+            description="API-Football e historial"
+            count={clubs.filter((c) => c.apiTeamId).length}
+            onClick={() => navigate('/sincronizacion')}
+            delay={0.2}
           />
         </SimpleGrid>
       </PageContainer>

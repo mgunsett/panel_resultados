@@ -3,6 +3,8 @@ import { players } from '../../src/data/players.js'
 import { createApiFootballClient } from '../lib/apiFootball.js'
 import { adminDb, requireUser } from '../lib/firebaseAdmin.js'
 import { runSync } from '../lib/sync.js'
+import { backfillClubHistory, backfillPlayerSeason } from '../lib/backfill.js'
+import { currentSeason } from '../lib/mappers.js'
 
 // ─── PUENTE PANEL ↔ API-FOOTBALL ─────────────────────────────────
 // El panel nunca llama a API-Football directo (la key quedaría en el
@@ -14,6 +16,9 @@ import { runSync } from '../lib/sync.js'
 //   GET  ?action=squad&team=435       plantel de un equipo (con IDs)
 //   GET  ?action=players&q=mainero    buscar jugadores por apellido
 //   POST ?action=sync[&club=id][&dryRun=1]   sincronizar ahora
+//   POST ?action=history&club=id[&season=2026]  completar historial de
+//        partidos de un club (en tandas: repetir mientras remaining > 0)
+//   POST ?action=season&player=slug&season=2025  totales de un año
 
 const json = (status, body) =>
   new Response(JSON.stringify(body), {
@@ -88,6 +93,31 @@ export default async (req) => {
           clubId: params.get('club') || null,
           dryRun: params.get('dryRun') === '1',
         })
+        return json(200, report)
+      }
+
+      case 'history': {
+        if (req.method !== 'POST') return json(405, { error: 'Usá POST.' })
+        const club = clubs.find((c) => c.id === params.get('club'))
+        if (!club) return json(400, { error: 'Club desconocido.' })
+        const report = await backfillClubHistory({
+          db: adminDb(),
+          api,
+          club,
+          clubPlayers: players.filter((p) => p.clubId === club.id),
+          season: Number(params.get('season')) || currentSeason(),
+          dryRun: params.get('dryRun') === '1',
+        })
+        return json(200, report)
+      }
+
+      case 'season': {
+        if (req.method !== 'POST') return json(405, { error: 'Usá POST.' })
+        const player = players.find((p) => p.slug === params.get('player'))
+        if (!player) return json(400, { error: 'Jugador desconocido.' })
+        const season = Number(params.get('season'))
+        if (!season) return json(400, { error: 'Falta el parámetro season.' })
+        const report = await backfillPlayerSeason({ db: adminDb(), api, player, season })
         return json(200, report)
       }
 
