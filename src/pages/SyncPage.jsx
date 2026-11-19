@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import {
   Box, Flex, HStack, VStack, Text, Button, Input, Badge, Image, Code,
-  SimpleGrid, Spinner, useClipboard, useToast,
+  SimpleGrid, Spinner, Select, useClipboard, useToast,
 } from '@chakra-ui/react'
 import { FiActivity, FiRefreshCw, FiEye, FiSearch, FiCopy, FiCheck, FiUsers } from 'react-icons/fi'
 import { getClubsWithPlayers } from '../data/players'
@@ -178,6 +178,54 @@ function SyncReport({ report }) {
   )
 }
 
+// Para cuando el apellido no coincide con el de la API (ej: el jugador
+// figura con otro apellido) o no aparece en el plantel (ej: reservas):
+// elegir a mano del plantel completo, o buscar por apellido en toda la
+// base de API-Football.
+function ManualPlayerPick({ player, squad }) {
+  const words = player.name.split(/\s+/)
+  const [q, setQ] = useState(words[words.length - 1])
+  const search = useApiAction()
+  const [picked, setPicked] = useState('')
+  const pickedPlayer = squad.find((p) => String(p.id) === picked)
+
+  return (
+    <Box w="100%" pl={{ base: 0, md: '168px' }} pb={2}>
+      {squad.length > 0 && (
+        <HStack mb={2}>
+          <Select {...inputStyle} h="34px" size="sm" placeholder="Elegir del plantel…"
+            value={picked} onChange={(e) => setPicked(e.target.value)}>
+            {squad.map((p) => (
+              <option key={p.id} value={p.id} style={{ background: '#1E1B19' }}>
+                {p.name}{p.number ? ` #${p.number}` : ''}{p.position ? ` · ${p.position}` : ''}
+              </option>
+            ))}
+          </Select>
+          {pickedPlayer && <CopyId value={`apiPlayerId: ${pickedPlayer.id},`} label={`ID ${pickedPlayer.id}`} />}
+        </HStack>
+      )}
+      <HStack mb={2}>
+        <Input {...inputStyle} h="34px" size="sm" value={q} onChange={(e) => setQ(e.target.value)}
+          placeholder="Buscar por apellido en toda la API" />
+        <Button {...btn} leftIcon={<FiSearch />} isLoading={search.loading}
+          onClick={() => search.run('players', { q })}>Buscar</Button>
+      </HStack>
+      {search.data?.results?.length === 0 && <Text fontSize="xs" color="brand.gray">Sin resultados con ese apellido.</Text>}
+      <VStack align="stretch" spacing={1}>
+        {search.data?.results?.slice(0, 15).map((r) => (
+          <Flex key={r.id} align="center" gap={2} fontSize="sm">
+            {r.photo && <Image src={r.photo} boxSize="22px" borderRadius="full" alt="" />}
+            <Text color="white" flex={1}>
+              {r.name} <Text as="span" color="brand.gray">· {r.nationality || '—'}{r.birth ? ` · ${r.birth}` : ''}</Text>
+            </Text>
+            <CopyId value={`apiPlayerId: ${r.id},`} label={`ID ${r.id}`} />
+          </Flex>
+        ))}
+      </VStack>
+    </Box>
+  )
+}
+
 // ── Mapeo de IDs ──
 function ClubMapping({ club }) {
   const [q, setQ] = useState(club.name)
@@ -239,7 +287,10 @@ function ClubMapping({ club }) {
                         <CopyId value={`apiPlayerId: ${match.id},`} label={`ID ${match.id}`} />
                       </>
                     ) : (
-                      <Text color="brand.amber" fontSize="xs">No aparece en el plantel de la API</Text>
+                      <>
+                        <Text color="brand.amber" fontSize="xs">No coincide con nadie del plantel: elegilo o buscalo a mano</Text>
+                        <ManualPlayerPick player={p} squad={squad.data.results} />
+                      </>
                     )}
                   </Flex>
                 )
