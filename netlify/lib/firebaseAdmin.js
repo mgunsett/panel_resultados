@@ -36,13 +36,15 @@ export function adminAuth() {
 }
 
 // Valida el token de Firebase que manda el panel. Cualquier usuario
-// logueado es admin, igual que en las reglas de Firestore.
+// logueado es admin, MENOS las cuentas de jugador que crea el alta de
+// jugadores: esas llevan el claim role: 'player' y no entran al panel.
 export async function requireUser(req) {
   const header = req.headers.get('authorization') || ''
   const token = header.startsWith('Bearer ') ? header.slice(7) : null
   if (!token) return null
   try {
-    return await adminAuth().verifyIdToken(token)
+    const decoded = await adminAuth().verifyIdToken(token)
+    return decoded.role === 'player' ? null : decoded
   } catch {
     return null
   }

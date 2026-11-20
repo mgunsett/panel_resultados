@@ -2,7 +2,8 @@ import { useMemo, useState } from 'react'
 import {
   Box, Flex, Text, Image, Input, InputGroup, InputLeftElement, InputRightElement, IconButton, Button,
 } from '@chakra-ui/react'
-import { FiSearch, FiX } from 'react-icons/fi'
+import { FiSearch, FiX, FiPlus } from 'react-icons/fi'
+import { useNavigate } from 'react-router-dom'
 import { playerInitials } from '../../data/players'
 import { matchesQuery } from '../home/PlayerSearch'
 import { STATUS_COLORS } from '../home/ShowcaseCard'
@@ -38,6 +39,7 @@ const thinScroll = {
 export default function RosterList({ rows, selected, onSelect }) {
   const [q, setQ] = useState('')
   const [filter, setFilter] = useState('todos')
+  const navigate = useNavigate()
 
   const { groups, shown } = useMemo(() => {
     let list = rows.filter((r) => matchesQuery(r, q))
@@ -64,6 +66,14 @@ export default function RosterList({ rows, selected, onSelect }) {
         <Text as="h1" fontFamily="heading" fontSize="40px" lineHeight={1}>Jugadores</Text>
         <Text fontSize="14px" color="brand.gray">{shown} de {rows.length}</Text>
       </Flex>
+
+      <Button
+        leftIcon={<FiPlus />} onClick={() => navigate('/jugadores/nuevo')} h="44px" borderRadius="8px"
+        bg="brand.orange" color="brand.brown" fontFamily="mono" fontSize="14px" fontWeight={600} letterSpacing="0.12em" textTransform="uppercase"
+        _hover={{ bg: '#ffb35e' }} _active={{ bg: 'brand.orangeDark' }}
+      >
+        Nuevo jugador
+      </Button>
 
       <InputGroup>
         <InputLeftElement h="44px" pointerEvents="none" color="brand.gray"><FiSearch size={18} /></InputLeftElement>

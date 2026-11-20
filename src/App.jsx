@@ -3,6 +3,7 @@ import { Routes, Route, Navigate, useLocation } from 'react-router-dom'
 import { Box, Spinner } from '@chakra-ui/react'
 import { AnimatePresence } from 'framer-motion'
 import { useAuth } from './lib/auth'
+import { useRoster } from './lib/rosterStore'
 import { isFirebaseConfigured } from './lib/firebase'
 import NotConfigured from './components/ui/NotConfigured'
 import PageTransition from './components/ui/PageTransition'
@@ -14,16 +15,20 @@ import PlayerDetailPage from './pages/PlayerDetailPage'
 import ClubsPage from './pages/ClubsPage'
 import ClubDetailPage from './pages/ClubDetailPage'
 import SyncPage from './pages/SyncPage'
+import NewPlayerPage from './pages/NewPlayerPage'
 import StatsPage from './pages/StatsPage'
 
 // Gate general: sin sesión no se ve nada del panel.
 function Protected({ children }) {
   const { user, loading } = useAuth()
+  const roster = useRoster()
   const location = useLocation()
 
   if (!isFirebaseConfigured) return <NotConfigured />
 
-  if (loading) {
+  // Con sesión, espera también a los jugadores dados de alta desde el
+  // panel (Firestore): sin eso sus fichas darían "no encontrado".
+  if (loading || (user && !roster.ready)) {
     return (
       <Box minH="100vh" bg="brand.dark" display="flex" alignItems="center" justifyContent="center">
         <Spinner color="brand.amber" size="lg" />
@@ -62,6 +67,7 @@ function PanelRoutes() {
         <Routes location={location} key={location.pathname}>
           <Route index element={<PageTransition><HomePage /></PageTransition>} />
           <Route path="jugadores" element={<PageTransition><PlayersPage /></PageTransition>} />
+          <Route path="jugadores/nuevo" element={<PageTransition><NewPlayerPage /></PageTransition>} />
           <Route path="jugador/:slug" element={<PageTransition><PlayerDetailPage /></PageTransition>} />
           <Route path="clubes" element={<PageTransition><ClubsPage /></PageTransition>} />
           <Route path="club/:clubId" element={<PageTransition><ClubDetailPage /></PageTransition>} />

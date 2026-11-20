@@ -1,10 +1,9 @@
-import { clubs } from '../../src/data/clubs.js'
-import { players } from '../../src/data/players.js'
 import { createApiFootballClient } from '../lib/apiFootball.js'
 import { adminDb, requireUser } from '../lib/firebaseAdmin.js'
 import { runSync } from '../lib/sync.js'
 import { backfillClubHistory, backfillPlayerSeason } from '../lib/backfill.js'
 import { currentSeason } from '../lib/mappers.js'
+import { loadRoster } from '../lib/roster.js'
 
 // ─── PUENTE PANEL ↔ API-FOOTBALL ─────────────────────────────────
 // El panel nunca llama a API-Football directo (la key quedaría en el
@@ -15,6 +14,8 @@ import { currentSeason } from '../lib/mappers.js'
 //   GET  ?action=teams&q=talleres     buscar equipos por nombre
 //   GET  ?action=squad&team=435       plantel de un equipo (con IDs)
 //   GET  ?action=players&q=mainero    buscar jugadores por apellido
+//   GET  ?action=profile&id=6059      datos personales, club actual y
+//        trayectoria de un jugador (alta de jugadores, 3 o 4 requests)
 //   POST ?action=sync[&club=id][&dryRun=1]   sincronizar ahora
 //   POST ?action=history&club=id[&season=2026]  completar historial de
 //        partidos de un club (en tandas: repetir mientras remaining > 0)
@@ -79,12 +80,59 @@ export default async (req) => {
           results: res.map(({ player }) => ({
             id: player.id, name: `${player.firstname || ''} ${player.lastname || ''}`.trim() || player.name,
             nationality: player.nationality, birth: player.birth?.date || null, photo: player.photo,
+            position: player.position || null, age: player.age ?? null,
           })),
+        })
+      }
+
+      case 'profile': {
+        const id = Number(params.get('id'))
+        if (!id) return json(400, { error: 'Falta el parámetro id.' })
+        const [profiles, teams] = await Promise.all([
+          api.get('/players/profiles', { player: id }),
+          api.get('/players/teams', { player: id }),
+        ])
+        const p = profiles?.[0]?.player
+        if (!p) return json(404, { error: `No hay ningún jugador con el ID ${id} en API-Football.` })
+
+        // Club, liga y posición de la temporada en curso. Si no jugó
+        // todavía este año, queda el último club de la trayectoria.
+        let stat = null
+        for (const season of [currentSeason(), currentSeason() - 1]) {
+          const r = await api.get('/players', { id, season })
+          const list = r?.[0]?.statistics || []
+          stat = list.find((x) => x.games?.appearences) || list[0] || null
+          if (stat) break
+        }
+
+        const career = (teams || [])
+          .map(({ team, seasons }) => ({
+            teamId: team.id, name: team.name, logo: team.logo || null,
+            from: Math.min(...seasons), to: Math.max(...seasons),
+          }))
+          .sort((a, b) => b.to - a.to || b.from - a.from)
+        const cur = stat?.team || (career[0] ? { id: career[0].teamId, name: career[0].name, logo: career[0].logo } : null)
+
+        return json(200, {
+          id: p.id,
+          name: `${p.firstname || ''} ${p.lastname || ''}`.trim() || p.name,
+          birthDate: p.birth?.date || null,
+          birthPlace: [p.birth?.place, p.birth?.country].filter(Boolean).join(', ') || null,
+          nationality: p.nationality || null,
+          height: p.height || null,
+          weight: p.weight || null,
+          number: p.number ?? null,
+          position: stat?.games?.position || p.position || null,
+          photo: p.photo || null,
+          team: cur ? { id: cur.id, name: cur.name, logo: cur.logo || null } : null,
+          league: stat?.league ? { name: stat.league.name, country: stat.league.country } : null,
+          career,
         })
       }
 
       case 'sync': {
         if (req.method !== 'POST') return json(405, { error: 'Usá POST para sincronizar.' })
+        const { clubs, players } = await loadRoster(adminDb())
         const report = await runSync({
           db: adminDb(),
           api,
@@ -98,6 +146,7 @@ export default async (req) => {
 
       case 'history': {
         if (req.method !== 'POST') return json(405, { error: 'Usá POST.' })
+        const { clubs, players } = await loadRoster(adminDb())
         const club = clubs.find((c) => c.id === params.get('club'))
         if (!club) return json(400, { error: 'Club desconocido.' })
         const report = await backfillClubHistory({
@@ -113,6 +162,7 @@ export default async (req) => {
 
       case 'season': {
         if (req.method !== 'POST') return json(405, { error: 'Usá POST.' })
+        const { players } = await loadRoster(adminDb())
         const player = players.find((p) => p.slug === params.get('player'))
         if (!player) return json(400, { error: 'Jugador desconocido.' })
         const season = Number(params.get('season'))

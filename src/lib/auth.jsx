@@ -6,6 +6,13 @@ import { auth, isFirebaseConfigured } from './firebase'
 // Gate único para toda la app: un solo admin con acceso a todos los
 // jugadores. Mismo patrón que el AdminPage de las landings, pero
 // elevado a contexto para que lo consuman las rutas protegidas.
+//
+// Las cuentas de jugador (las crea /jugadores/nuevo) llevan el claim
+// role: 'player' y no pueden usar el panel: si alguna inicia sesión acá
+// se la desloguea en el momento.
+
+const isPlayerAccount = async (u) => (await u.getIdTokenResult()).claims.role === 'player'
+const PLAYER_ERROR = 'Esta es una cuenta de jugador: sirve para su landing, no para el panel.'
 
 const AuthContext = createContext({ user: null, loading: true })
 
@@ -18,14 +25,25 @@ export function AuthProvider({ children }) {
       setLoading(false)
       return
     }
-    const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
+    const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
+      if (currentUser && (await isPlayerAccount(currentUser).catch(() => false))) {
+        await signOut(auth)
+        return
+      }
       setUser(currentUser)
       setLoading(false)
     })
     return () => unsubscribe()
   }, [])
 
-  const login = (email, password) => signInWithEmailAndPassword(auth, email, password)
+  const login = async (email, password) => {
+    const cred = await signInWithEmailAndPassword(auth, email, password)
+    if (await isPlayerAccount(cred.user)) {
+      await signOut(auth)
+      throw new Error(PLAYER_ERROR)
+    }
+    return cred
+  }
   const logout = () => signOut(auth)
 
   return (
