@@ -167,7 +167,7 @@ function SyncCard() {
       }
     >
       <Text fontSize="sm" color="brand.gray" mb={data ? 4 : 0}>
-        Corre sola cada 3 horas. Desde acá la podés forzar, o probar primero para ver qué cambiaría sin tocar las landings.
+        Corre sola de lunes a viernes a las 06:00 y los sábados y domingos a las 06:00 y 18:00 (hora de Argentina). Desde acá la podés forzar, o probar primero para ver qué cambiaría sin tocar las landings.
         Los partidos marcados con <b>Bloquear</b> nunca se pisan.
       </Text>
 

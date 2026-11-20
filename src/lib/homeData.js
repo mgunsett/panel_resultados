@@ -147,10 +147,13 @@ export function lastApiUpdate(rows) {
   return max ? new Date(max) : null
 }
 
-// La sincronización programada corre cada 3 horas en punto (UTC).
-export function nextScheduledSync(now = new Date()) {
-  const step = 3 * 60 * 60 * 1000
-  return new Date(Math.floor(now.getTime() / step) * step + step)
+// Horario de la sincronización programada: ver syncSchedule.js.
+export { nextScheduledSync } from './syncSchedule'
+
+// "06:00" si es hoy, "Sáb 21 06:00" si es otro día.
+export function formatWhen(d, now = new Date()) {
+  if (!d) return ''
+  return d.toDateString() === now.toDateString() ? formatTime(d) : `${formatDay(d)} ${formatTime(d)}`
 }
 
 export function relativeTime(date, now = new Date()) {
