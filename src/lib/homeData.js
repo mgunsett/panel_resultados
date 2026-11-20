@@ -77,6 +77,21 @@ export function playerStatus(player, club, matches) {
   return { id: 'ok', label: 'Al día', reason: 'Se actualiza solo con API-Football.' }
 }
 
+// "Dom 22 19:00 · en Boca" para el próximo partido de un jugador.
+export function nextMatchLabel(next, club) {
+  if (!next?.home_team) return ''
+  const d = matchDate(next)
+  const time = next.match_time || (next.match_datetime ? formatTime(d) : '')
+  const when = d ? `${formatDay(d)}${time ? ` ${time}` : ''} · ` : next.match_date ? `${next.match_date} · ` : ''
+  return `${when}${opponentLabel(next, club)}`
+}
+
+// Fila lista para mostrar: estado de la landing y próximo partido.
+export function enrichRow(r) {
+  const nextDate = matchDate(r.matches?.next)
+  return { ...r, status: playerStatus(r.player, r.club, r.matches), nextDate, nextLabel: nextMatchLabel(r.matches?.next, r.club) }
+}
+
 // Partidos de la semana, uno por partido real (no por jugador): los
 // jugadores del mismo club que juegan el mismo partido se agrupan.
 export function weekMatches(rows, now = new Date()) {

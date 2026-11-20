@@ -35,7 +35,7 @@ const QuickProfile = forwardRef(function QuickProfile({ row, onClose }, ref) {
     <MotionBox
       ref={ref} as="section" aria-label={`Ficha rápida de ${player.name}`}
       initial={{ opacity: 0, y: -8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -8 }} transition={{ duration: 0.22 }}
-      display="flex" flexWrap="wrap" gap={6} p={5.5} borderRadius="16px" bg="brand.dark2" border="1px solid" borderColor="#6b4a22"
+      display="flex" flexWrap="wrap" gap={6} p={6} borderRadius="16px" bg="brand.dark2" border="1px solid" borderColor="#6b4a22"
       scrollMarginTop="90px"
     >
       {player.photo ? (
