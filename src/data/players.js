@@ -14,6 +14,12 @@
 // `apiPlayerId` es el ID del jugador en API-Football. Se busca desde el
 // panel en /sincronizacion → Jugadores. Con null, el jugador recibe el
 // resultado y el próximo partido de su club, pero no sus estadísticas.
+//
+// `landingUrl` es la web pública del jugador y `driveUrl` el link a su
+// carpeta de fotos en Google Drive (el de "Compartir" de la carpeta).
+// Alimentan los botones "Landing" y "Fotos" de los banners. Si falta
+// alguno, el botón queda deshabilitado con un aviso. Solo se aceptan
+// links https.
 
 import { clubs, getClub } from './clubs.js'
 
@@ -73,6 +79,7 @@ export const players = [
     clubId: 'emelec',
     photo: '/players/jp_ruizgomez.webp',
     apiPlayerId: 59055,
+    landingUrl: 'https://jp-ruizgomez.netlify.app/',
   },
   {
     slug: 'licha_alzugaray',
@@ -146,6 +153,21 @@ export const players = [
     apiPlayerId: null,
   }
 ]
+
+// Solo links https: un valor mal pegado no termina como href.
+function safeUrl(value) {
+  try {
+    const url = new URL(String(value || '').trim())
+    return url.protocol === 'https:' ? url.href : null
+  } catch {
+    return null
+  }
+}
+
+// Links externos del jugador, ya validados. null si falta o no es https.
+export function playerLinks(player) {
+  return { landing: safeUrl(player?.landingUrl), drive: safeUrl(player?.driveUrl) }
+}
 
 export function getPlayer(slug) {
   return players.find((p) => p.slug === slug) || null

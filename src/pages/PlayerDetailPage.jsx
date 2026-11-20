@@ -14,6 +14,7 @@ import { exportFileName } from '../lib/exporters'
 import { currentYear, dash, deltaVs, fmtInt, seasonMatches } from '../lib/profileData'
 import NotFoundNotice from '../components/ui/NotFoundNotice'
 import ClubCrest from '../components/clubs/ClubCrest'
+import PlayerLinks from '../components/players/PlayerLinks'
 import MatchEditor from '../components/match/MatchEditor'
 import ExportMenu from '../components/stats/ExportMenu'
 import PlayerSeasons from '../components/stats/PlayerSeasons'
@@ -193,6 +194,7 @@ export default function PlayerDetailPage() {
                     Comparar
                   </Button>
                 )}
+                <PlayerLinks player={player} btn={btn} />
                 {hasStats && <Box alignSelf="center"><ExportMenu name={exportFileName(player.slug, year)} sheets={exportSheets} isDisabled={statsLoading} /></Box>}
               </Flex>
             </Flex>
