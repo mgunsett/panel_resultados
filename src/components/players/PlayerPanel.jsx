@@ -8,6 +8,7 @@ import { STATUS_COLORS } from '../home/ShowcaseCard'
 import { dash, fmtInt, num, per90 } from '../../lib/profileData'
 import RecentForm from './RecentForm'
 import LandingSlots from './LandingSlots'
+import PlayerLinks from './PlayerLinks'
 import ClubCrest from '../clubs/ClubCrest'
 import heroTexture from '../../assets/fondo_led3.webp'
 
@@ -96,6 +97,7 @@ const PlayerPanel = forwardRef(function PlayerPanel({ row, mates, onSelect }, re
               _hover={{ bg: 'brand.brownLight', color: 'white' }} onClick={() => navigate(`/jugador/${player.slug}?tab=carga`)}>
               Cargar resultado
             </Button>
+            <PlayerLinks player={player} btn={btn} />
           </Flex>
         </Flex>
       </Flex>
