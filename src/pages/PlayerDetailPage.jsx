@@ -15,6 +15,9 @@ import { currentYear, dash, deltaVs, fmtInt, seasonMatches } from '../lib/profil
 import NotFoundNotice from '../components/ui/NotFoundNotice'
 import ClubCrest from '../components/clubs/ClubCrest'
 import PlayerLinks from '../components/players/PlayerLinks'
+import EditPencil from '../components/players/EditPencil'
+import { useEditPlayer } from '../components/players/EditPlayerDrawer'
+import { useRoster } from '../lib/rosterStore'
 import MatchEditor from '../components/match/MatchEditor'
 import ExportMenu from '../components/stats/ExportMenu'
 import PlayerSeasons from '../components/stats/PlayerSeasons'
@@ -72,6 +75,7 @@ export default function PlayerDetailPage() {
   const { slug } = useParams()
   const navigate = useNavigate()
   const reduceMotion = useReducedMotion()
+  useRoster() // vuelve a dibujar con la ficha nueva después de "Editar jugador"
   const player = getPlayer(slug)
   const club = getClub(player?.clubId)
   // Los hooks van siempre (no pueden ir después de un return); con un
@@ -80,6 +84,7 @@ export default function PlayerDetailPage() {
   const { stats, loading: statsLoading } = usePlayerStats(slug)
   const [params, setParams] = useSearchParams()
   const tabIndex = Math.max(0, TABS.findIndex((t) => t.id === params.get('tab')))
+  const edit = useEditPlayer(player)
 
   if (!player) {
     return (
@@ -170,7 +175,10 @@ export default function PlayerDetailPage() {
                   {[club?.name || 'Sin club', club?.competition, club?.country].filter(Boolean).join(' · ')}
                 </Text>
               </Flex>
-              <Text as="h1" fontFamily="heading" fontSize={{ base: '54px', md: '96px' }} lineHeight={0.86} letterSpacing="0.01em">{player.name}</Text>
+              <Flex align="center" gap={2} minW={0}>
+                <Text as="h1" fontFamily="heading" fontSize={{ base: '54px', md: '96px' }} lineHeight={0.86} letterSpacing="0.01em" minW={0}>{player.name}</Text>
+                <EditPencil onClick={() => edit.open()} label={`Editar a ${player.name}`} alignSelf={{ base: 'center', md: 'flex-start' }} mt={{ md: 2 }} />
+              </Flex>
               <Flex wrap="wrap" align="center" gap={2.5}>
                 <Flex align="center" gap={2} px={3.5} py={1.5} borderRadius="full" bg="rgba(13,12,11,.75)" border="1px solid" borderColor="#2e2825"
                   fontSize="14px" color="brand.amber">
@@ -194,13 +202,15 @@ export default function PlayerDetailPage() {
                     Comparar
                   </Button>
                 )}
-                <PlayerLinks player={player} btn={btn} />
+                <PlayerLinks player={player} btn={btn} onEdit={edit.open} />
                 {hasStats && <Box alignSelf="center"><ExportMenu name={exportFileName(player.slug, year)} sheets={exportSheets} isDisabled={statsLoading} /></Box>}
               </Flex>
             </Flex>
           </Flex>
         </Flex>
       </Box>
+
+      {edit.drawer}
 
       {/* Temporada en curso vs. la anterior */}
       {hasStats && season && (

@@ -13,18 +13,25 @@ import { mergeRoster, PLAYERS } from './roster'
 // panel: true en Firestore, con su club si era nuevo) y se suman a esos mismos
 // arrays. El panel espera a que termine antes de mostrarse (ver
 // Protected en App.jsx). Si Firestore falla, sigue con los archivos.
+// También aplica los cambios hechos con "Editar jugador" a los de
+// players.js (panelEdit en su doc, ver roster.js).
 
 const RosterContext = createContext({ ready: false, version: 0, error: null, refresh: async () => {} })
 
-const fileSlugs = new Set(players.map((p) => p.slug))
-const fileClubIds = new Set(clubs.map((c) => c.id))
+// Copia de lo que traen los archivos, antes de cualquier override:
+// cada refresh vuelve a armar todo desde acá, así deshacer un cambio
+// del panel devuelve el valor de players.js.
+const filePlayers = [...players]
+const fileClubs = [...clubs]
 
-function applyRoster(extraPlayers) {
-  const merged = mergeRoster({
-    players: players.filter((p) => fileSlugs.has(p.slug)),
-    clubs: clubs.filter((c) => fileClubIds.has(c.id)),
-    extraPlayers,
-  })
+// Ficha de players.js tal cual está en el archivo (null si es de alta
+// en el panel). La usa "Editar jugador" para guardar sólo lo que cambia.
+export function filePlayer(slug) {
+  return filePlayers.find((p) => p.slug === slug) || null
+}
+
+function applyRoster(extraPlayers, edits) {
+  const merged = mergeRoster({ players: filePlayers, clubs: fileClubs, extraPlayers, edits })
   // Mismo array, contenido nuevo: los imports existentes ven el cambio.
   players.splice(0, players.length, ...merged.players)
   clubs.splice(0, clubs.length, ...merged.clubs)
@@ -36,8 +43,12 @@ export function RosterProvider({ children }) {
 
   const refresh = useCallback(async () => {
     try {
-      const ps = await getDocs(query(collection(db, PLAYERS), where('panel', '==', true)))
-      applyRoster(ps.docs.map((d) => ({ ...d.data(), slug: d.id })))
+      const [ps, es] = await Promise.all([
+        getDocs(query(collection(db, PLAYERS), where('panel', '==', true))),
+        getDocs(query(collection(db, PLAYERS), where('panelEdited', '==', true))),
+      ])
+      const rows = (snap) => snap.docs.map((d) => ({ ...d.data(), slug: d.id }))
+      applyRoster(rows(ps), rows(es))
       setState((s) => ({ ready: true, version: s.version + 1, error: null }))
     } catch (err) {
       console.error('No se pudieron leer los jugadores dados de alta en el panel:', err)

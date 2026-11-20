@@ -1,9 +1,10 @@
 import { useEffect, useMemo, useState, useCallback } from 'react'
 import { emptyPlayerStats, fetchPlayerStats } from '../lib/playerStats'
-import { players } from '../data/players'
+import { players, getPlayer } from '../data/players'
 import { getClub } from '../data/clubs'
 import { fetchPlayerMatches } from '../lib/matches'
 import { enrichRow } from '../lib/homeData'
+import { useRoster } from '../lib/rosterStore'
 
 // Estadísticas de un jugador. `reload` vuelve a leer (después de
 // completar el historial, por ejemplo).
@@ -77,7 +78,15 @@ export function useHomeData(refreshKey) {
     return () => { cancelled = true }
   }, [refreshKey])
 
-  return { rows, loading }
+  // Después de "Editar jugador" la ficha (nombre, club, links…) cambia
+  // sin volver a leer partidos ni estadísticas.
+  const { version } = useRoster()
+  const fresh = useMemo(() => rows.map((r) => {
+    const player = getPlayer(r.player.slug) || r.player
+    return player === r.player ? r : { ...r, player, club: getClub(player.clubId) }
+  }), [rows, version]) // eslint-disable-line react-hooks/exhaustive-deps
+
+  return { rows: fresh, loading }
 }
 
 // Las mismas filas con el estado de la landing y el próximo partido

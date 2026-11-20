@@ -9,6 +9,8 @@ import { dash, fmtInt, num, per90 } from '../../lib/profileData'
 import RecentForm from './RecentForm'
 import LandingSlots from './LandingSlots'
 import PlayerLinks from './PlayerLinks'
+import EditPencil from './EditPencil'
+import { useEditPlayer } from './EditPlayerDrawer'
 import ClubCrest from '../clubs/ClubCrest'
 import heroTexture from '../../assets/fondo_led3.webp'
 
@@ -52,6 +54,7 @@ const PlayerPanel = forwardRef(function PlayerPanel({ row, mates, onSelect }, re
   const { player, club, stats, matches, status } = row
   const season = stats.season
   const year = season?.temporada || new Date().getFullYear()
+  const edit = useEditPlayer(player)
 
   return (
     <MotionBox
@@ -80,7 +83,10 @@ const PlayerPanel = forwardRef(function PlayerPanel({ row, mates, onSelect }, re
               {[club?.name || 'Sin club', club?.competition, club?.country].filter(Boolean).join(' · ')}
             </Text>
           </Flex>
-          <Text as="h2" fontFamily="heading" fontSize={{ base: '44px', md: '64px' }} lineHeight={0.9}>{player.name}</Text>
+          <Flex align="center" gap={1.5} minW={0}>
+            <Text as="h2" fontFamily="heading" fontSize={{ base: '44px', md: '64px' }} lineHeight={0.9} minW={0}>{player.name}</Text>
+            <EditPencil onClick={() => edit.open()} label={`Editar a ${player.name}`} />
+          </Flex>
           <Flex align="center" gap={2} alignSelf="flex-start" px={3} py={1.5} borderRadius="full" bg="rgba(13,12,11,.7)"
             border="1px solid" borderColor="#2e2825" fontSize="14px" color="brand.amber">
             <Box boxSize="8px" borderRadius="full" bg={STATUS_COLORS[status.id]} flexShrink={0} />
@@ -97,9 +103,10 @@ const PlayerPanel = forwardRef(function PlayerPanel({ row, mates, onSelect }, re
               _hover={{ bg: 'brand.brownLight', color: 'white' }} onClick={() => navigate(`/jugador/${player.slug}?tab=carga`)}>
               Cargar resultado
             </Button>
-            <PlayerLinks player={player} btn={btn} />
+            <PlayerLinks player={player} btn={btn} onEdit={edit.open} />
           </Flex>
         </Flex>
+        {edit.drawer}
       </Flex>
 
       <Flex direction="column" gap={2.5}>
