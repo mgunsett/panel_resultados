@@ -1,8 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import {
-  Box, Flex, HStack, Text, Input, InputGroup, InputLeftElement, Select, SimpleGrid, Spinner,
+  Box, Flex, HStack, Text, Select, SimpleGrid, Spinner,
 } from '@chakra-ui/react'
-import { FiSearch } from 'react-icons/fi'
 import { AnimatePresence, motion, useReducedMotion } from 'framer-motion'
 import { players } from '../data/players'
 import { useHomeData } from '../hooks/usePlayerStats'
@@ -14,6 +13,7 @@ import WeekAgenda from '../components/home/WeekAgenda'
 import SeasonRanking from '../components/home/SeasonRanking'
 import ShowcaseCard from '../components/home/ShowcaseCard'
 import QuickProfile from '../components/home/QuickProfile'
+import PlayerSearch, { matchesQuery } from '../components/home/PlayerSearch'
 import heroTexture from '../assets/fondo_led3.webp'
 
 const MotionBox = motion(Box)
@@ -24,7 +24,6 @@ const FILTERS = [
   { id: 'rev', label: 'Para revisar' },
 ]
 
-const norm = (s) => String(s || '').normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase()
 
 // ─── HOME: VITRINA DE JUGADORES ──────────────────────────────────
 // Portada con buscador, la semana de partidos, el ranking de la
@@ -54,8 +53,7 @@ export default function HomePage() {
   const updated = useMemo(() => lastApiUpdate(rows), [rows])
 
   const cards = useMemo(() => {
-    const term = norm(q.trim())
-    let list = rows.filter((r) => !term || norm(r.player.name).includes(term) || norm(r.club?.name).includes(term))
+    let list = rows.filter((r) => matchesQuery(r, q))
     if (filter !== 'todos') list = list.filter((r) => r.status.id === filter)
     const by = {
       next: (a, b) => (a.nextDate?.getTime() ?? Infinity) - (b.nextDate?.getTime() ?? Infinity),
@@ -71,7 +69,7 @@ export default function HomePage() {
   // Al elegir un jugador, la ficha rápida queda a la vista.
   useEffect(() => {
     if (picked && profileRef.current) {
-      profileRef.current.scrollIntoView({ behavior: reduceMotion ? 'auto' : 'smooth', block: 'nearest' })
+      profileRef.current.scrollIntoView({ behavior: reduceMotion ? 'auto' : 'smooth', block: 'start' })
     }
   }, [picked, reduceMotion])
 
@@ -98,17 +96,7 @@ export default function HomePage() {
           {updated && (
             <Text fontSize="14px" color="brand.amber">Datos de API-Football actualizados {relativeTime(updated)}</Text>
           )}
-          <InputGroup mt={1.5}>
-            <InputLeftElement h="54px" pl={2} pointerEvents="none" color="brand.gray"><FiSearch size={20} /></InputLeftElement>
-            <Input
-              type="search" value={q} onChange={(e) => setQ(e.target.value)} placeholder="Buscar jugador o club…"
-              aria-label="Buscar jugador o club"
-              h="54px" pl="48px" borderRadius="12px" bg="rgba(21,19,18,.9)" border="1px solid" borderColor="brand.brownDark"
-              fontSize="17px" color="white" _placeholder={{ color: '#8c7f70' }}
-              _hover={{ borderColor: 'brand.gray' }}
-              _focus={{ borderColor: 'brand.orange', boxShadow: '0 0 0 3px rgba(249,160,63,.2)' }}
-            />
-          </InputGroup>
+          <PlayerSearch rows={rows} value={q} onChange={setQ} onPick={setPicked} />
         </MotionBox>
       </Box>
 
