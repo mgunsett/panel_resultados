@@ -1,74 +1,124 @@
-import { Box, Flex, VStack, Text, Badge } from '@chakra-ui/react'
-import { motion, useReducedMotion } from 'framer-motion'
+import { Box, Button, Flex, Image, Text } from '@chakra-ui/react'
+import { useNavigate } from 'react-router-dom'
+import { playerInitials } from '../../data/players'
+import { RESULT } from '../../lib/profileData'
+import { CLUB_STATUS, clubView } from '../../lib/clubsData'
 import ClubCrest from './ClubCrest'
 
-const MotionBox = motion(Box)
+const lbl = { fontFamily: 'mono', fontSize: '12px', letterSpacing: '0.16em', textTransform: 'uppercase', color: 'brand.gray' }
 
-export default function ClubCard({ club, onClick, index = 0 }) {
-  const reduceMotion = useReducedMotion()
-  const count = club.players.length
+export function StatusPill({ id, label }) {
+  const tone = CLUB_STATUS[id]
+  return (
+    <Flex as="span" align="center" gap={1.5} px={3} py={1} borderRadius="full" bg={tone.bg} color={tone.color} flexShrink={0}
+      fontFamily="mono" fontSize="13px" letterSpacing="0.1em" textTransform="uppercase" whiteSpace="nowrap">
+      <Box boxSize="7px" borderRadius="full" bg={tone.color} />{label || tone.label}
+    </Flex>
+  )
+}
+
+function Tag({ bg, color, children }) {
+  return (
+    <Flex as="span" boxSize="24px" align="center" justify="center" borderRadius="6px" bg={bg} color={color} flexShrink={0}
+      fontFamily="mono" fontWeight="700" fontSize="14px">
+      {children}
+    </Flex>
+  )
+}
+
+// Una línea del partido: «Último  G  2-1 vs Racing   Dom 16».
+function MatchRow({ title, match, club, next }) {
+  const v = clubView(match, club)
+  let tag = null
+  let text = 'Sin cargar'
+  let when = ''
+  if (v && next) {
+    tag = <Tag bg="#2a2420" color="brand.amber">{v.cond || '·'}</Tag>
+    text = v.rival ? `${v.cond === 'V' ? 'en' : 'vs'} ${v.rival}` : `${match.home_team} vs ${match.away_team}`
+    when = [v.day, v.time].filter(Boolean).join(' · ')
+  } else if (v) {
+    const r = RESULT[v.res]
+    tag = <Tag bg={r?.bg || '#2a2420'} color={r?.color || 'brand.amber'}>{v.res || '·'}</Tag>
+    text = v.rival
+      ? <><Text as="b" color="brand.orange">{v.played ? `${v.gf}-${v.gc}` : ''}</Text> {v.cond === 'V' ? 'en' : 'vs'} {v.rival}</>
+      : `${match.home_team} ${v.played ? `${match.home_score}-${match.away_score}` : 'vs'} ${match.away_team}`
+    when = v.day
+  }
+  return (
+    <Flex align="center" gap={2.5} px={3.5} py={2.5} minH="44px" _notFirst={{ borderTop: '1px solid', borderColor: '#2a211b' }}>
+      <Text {...lbl} w="62px" flexShrink={0}>{title}</Text>
+      {tag}
+      <Text flex={1} minW={0} fontSize="15px" noOfLines={1} color={v ? 'white' : 'brand.gray'}>{text}</Text>
+      {when && <Text fontSize="13px" color="#8c7f70" whiteSpace="nowrap">{when}</Text>}
+    </Flex>
+  )
+}
+
+// ─── CARD DE CLUB EN LA GRILLA ───────────────────────────────────
+// Escudo, estado, último y próximo partido tal como están cargados,
+// los jugadores y un atajo para cargar el próximo partido.
+export default function ClubCard({ entry, loading }) {
+  const navigate = useNavigate()
+  const { club, matches, status } = entry
+  const ps = club.players
+  const open = (q = '') => navigate(`/club/${club.id}${q}`)
 
   return (
-    <MotionBox
-      initial={reduceMotion ? { opacity: 0 } : { opacity: 0, y: 12 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.28, delay: reduceMotion ? 0 : Math.min(index * 0.04, 0.3) }}
-      // Mismo criterio que PlayerCard: el lift va por framer-motion,
-      // que escribe transform inline y le ganaría a un _hover de Chakra.
-      whileHover={reduceMotion ? undefined : { y: -3 }}
-      whileTap={reduceMotion ? undefined : { scale: 0.985 }}
-      as="button"
-      type="button"
-      onClick={onClick}
-      textAlign="left"
-      bg="brand.dark2"
-      border="1px solid"
-      borderColor="brand.brownDark"
-      borderRadius="lg"
-      overflow="hidden"
-      cursor="pointer"
-      transitionProperty="border-color"
-      transitionDuration="0.2s"
-      _hover={{ borderColor: 'brand.orange' }}
-      _focusVisible={{ outline: '2px solid', outlineColor: 'brand.orange', outlineOffset: '2px' }}
+    <Flex
+      as="article" direction="column" gap={3.5} p="18px" minW={0} borderRadius="16px" bg="#050404"
+      border="1px solid" borderColor="transparent" boxShadow="inset 0 3px 0 #2a2420"
+      transition="border-color .15s" _hover={{ borderColor: '#3a2f27' }}
     >
       <Flex
-        position="relative"
-        align="center" justify="center"
-        h={{ base: '120px', md: '150px' }}
-        bgGradient="linear(to-b, brand.brownDark, brand.dark2)"
+        as="button" type="button" onClick={() => open()} aria-label={`Abrir ${club.name}`} align="center" gap={3.5} textAlign="left" minW={0}
+        _hover={{ '& .club-name': { color: 'brand.orange' } }}
+        _focusVisible={{ outline: '2px solid', outlineColor: 'brand.orange', outlineOffset: '4px', borderRadius: '8px' }}
       >
-        <ClubCrest club={club} size={{ base: '68px', md: '86px' }} fontSize="2xl" />
-
-        <Badge
-          position="absolute" top={2} right={2}
-          fontFamily="mono" fontSize="10px" letterSpacing="widest"
-          bg="transparent" color="brand.orange"
-          border="1px solid" borderColor="brand.orange"
-          px={2} py={0.5}
-        >
-          {count} {count === 1 ? 'jugador' : 'jugadores'}
-        </Badge>
+        <ClubCrest club={club} size="64px" fontSize="xl" />
+        <Flex flex={1} minW={0} direction="column" gap={1}>
+          <Text className="club-name" fontFamily="heading" fontSize="34px" lineHeight={0.95} noOfLines={1} transition="color .15s">{club.name}</Text>
+          <Text {...lbl} color="brand.orange" noOfLines={1}>{club.competition} · {club.country}</Text>
+        </Flex>
+        {!loading && <StatusPill id={status.id} />}
       </Flex>
 
-      <VStack
-        align="stretch" spacing={1}
-        px={4} py={3}
-        borderTop="1px solid" borderColor="brand.brownDark"
-      >
-        <Text
-          fontFamily="heading" fontSize={{ base: 'lg', md: '2xl' }} color="white"
-          lineHeight={1.1} noOfLines={1}
+      <Box borderRadius="12px" bg="#0f0c0a" border="1px solid" borderColor="#2a211b">
+        {loading ? (
+          <Text px={3.5} py={3} fontSize="14px" color="brand.gray">Cargando partidos…</Text>
+        ) : (
+          <>
+            <MatchRow title="Último" match={matches.last} club={club} />
+            <MatchRow title="Próximo" match={matches.next} club={club} next />
+          </>
+        )}
+      </Box>
+
+      <Flex align="center" gap={3}>
+        <Flex pl={2} flexShrink={0}>
+          {ps.slice(0, 5).map((p) => (
+            p.photo ? (
+              <Image key={p.slug} src={p.photo} alt={p.name} title={p.name} boxSize="34px" borderRadius="full" objectFit="cover" objectPosition="top"
+                bg="#2a2420" border="2px solid #050404" ml="-8px" />
+            ) : (
+              <Flex key={p.slug} title={p.name} boxSize="34px" borderRadius="full" bg="brand.brownLight" border="2px solid #050404" ml="-8px"
+                align="center" justify="center" fontSize="11px" color="brand.amber">{playerInitials(p.name)}</Flex>
+            )
+          ))}
+        </Flex>
+        <Text flex={1} minW={0} fontSize="13px" color="brand.gray" noOfLines={1}>{ps.length === 1 ? ps[0].name : `${ps.length} jugadores`}</Text>
+        <Button
+          size="sm" h="36px" px={3.5} bg="brand.orange" color="brand.brown" _hover={{ bg: '#ffb35e' }} _active={{ bg: '#ffb35e' }}
+          fontFamily="mono" fontSize="13px" letterSpacing="0.1em" textTransform="uppercase" onClick={() => open('?editar=next')}
         >
-          {club.name}
+          Cargar partido
+        </Button>
+      </Flex>
+
+      {!loading && status.warn && (
+        <Text px={3} py={2} borderRadius="8px" bg="rgba(249,160,63,.08)" border="1px solid" borderColor="rgba(249,160,63,.3)" fontSize="13px" color="brand.amber">
+          {status.warn}
         </Text>
-        <Text
-          fontFamily="mono" fontSize="11px" color="brand.gray"
-          letterSpacing="widest" textTransform="uppercase" noOfLines={1}
-        >
-          {club.country} · {club.competition}
-        </Text>
-      </VStack>
-    </MotionBox>
+      )}
+    </Flex>
   )
 }

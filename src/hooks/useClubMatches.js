@@ -64,8 +64,10 @@ export function useClubMatches(clubId) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [slugs])
 
+  // Devuelve true si se guardó, para que la vista sepa si cerrar el
+  // formulario o dejarlo abierto con lo que se estaba cargando.
   const saveMatch = useCallback(async (slot, form, shieldFiles) => {
-    if (!slugs.length) return
+    if (!slugs.length) return false
     setSaving(true)
     try {
       // El escudo se sube una única vez (bajo el primer jugador del
@@ -84,8 +86,10 @@ export function useClubMatches(clubId) {
         status: 'success',
         duration: 3000,
       })
+      return true
     } catch (err) {
       toast({ title: 'No se pudo guardar', description: err.message, status: 'error', duration: 5000 })
+      return false
     } finally {
       setSaving(false)
     }

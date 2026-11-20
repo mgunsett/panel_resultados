@@ -68,7 +68,9 @@ function TeamFields({ side, title, form, onChange, onShieldChange }) {
   )
 }
 
-export default function MatchForm({ slot, label, data, onSave, saving }) {
+// `saveLabel` y `onCancel` son opcionales: los usa la página del club,
+// que abre el formulario dentro de la card del partido.
+export default function MatchForm({ slot, label, data, onSave, saving, saveLabel, onCancel }) {
   const [form, setForm] = useState(() => toFormState(data))
   const [shieldFiles, setShieldFiles] = useState({ home: null, away: null })
   const toast = useToast()
@@ -101,10 +103,12 @@ export default function MatchForm({ slot, label, data, onSave, saving }) {
 
   return (
     <Box>
-      <Text fontFamily="mono" fontSize="10px" color="brand.gray"
-            textTransform="uppercase" letterSpacing="widest" mb={4}>
-        {label}
-      </Text>
+      {label && (
+        <Text fontFamily="mono" fontSize="10px" color="brand.gray"
+              textTransform="uppercase" letterSpacing="widest" mb={4}>
+          {label}
+        </Text>
+      )}
 
       <Grid
         templateColumns={{ base: '1fr', md: '1fr auto 1fr' }}
@@ -161,19 +165,30 @@ export default function MatchForm({ slot, label, data, onSave, saving }) {
         )}
       </Flex>
 
-      <Button
-        mt={5} w="full"
-        bg="brand.amber" color="brand.brown"
-        fontFamily="mono" fontSize="sm" letterSpacing="widest" textTransform="uppercase"
-        borderRadius="md" h="44px"
-        leftIcon={<FiSave />}
-        _hover={{ bg: 'brand.amberDark', color: 'white' }}
-        _active={{ bg: 'brand.amberDark' }}
-        isLoading={saving}
-        onClick={handleSave}
-      >
-        Guardar {slot === 'last' ? 'Resultado' : 'Partido'}
-      </Button>
+      <Flex mt={5} gap={2.5}>
+        {onCancel && (
+          <Button
+            variant="outline" borderColor="#423a35" color="brand.amber" h="44px" px={5}
+            fontFamily="mono" fontSize="sm" letterSpacing="widest" textTransform="uppercase" borderRadius="md"
+            _hover={{ bg: '#2a2420', color: 'white' }} onClick={onCancel} isDisabled={saving}
+          >
+            Cancelar
+          </Button>
+        )}
+        <Button
+          flex={1}
+          bg="brand.amber" color="brand.brown"
+          fontFamily="mono" fontSize="sm" letterSpacing="widest" textTransform="uppercase"
+          borderRadius="md" h="44px"
+          leftIcon={<FiSave />}
+          _hover={{ bg: 'brand.amberDark', color: 'white' }}
+          _active={{ bg: 'brand.amberDark' }}
+          isLoading={saving}
+          onClick={handleSave}
+        >
+          {saveLabel || `Guardar ${slot === 'last' ? 'Resultado' : 'Partido'}`}
+        </Button>
+      </Flex>
     </Box>
   )
 }
