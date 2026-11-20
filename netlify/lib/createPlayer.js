@@ -8,8 +8,9 @@ import {
 // de /jugadores/nuevo. Hace tres cosas, en este orden:
 //   1. Crea la cuenta del jugador en Firebase Authentication (si se
 //      pidió). La contraseña viaja sólo en este pedido: no se guarda en
-//      ningún lado. La cuenta lleva el claim role: 'player' para que no
-//      pueda entrar al panel.
+//      ningún lado. La cuenta lleva los claims role: 'player' y slug:
+//      en el panel sólo ve su propia ficha, en modo lectura (ver
+//      netlify/lib/roles.js y firebase/firestore.rules).
 //   2. Guarda la ficha en players/{slug} (con panel: true y, si el club
 //      no existía, el club en `panelClub`).
 //   3. Guarda la cuenta (uid y email, nunca la contraseña) en

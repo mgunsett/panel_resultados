@@ -18,6 +18,7 @@ import PlayerLinks from '../components/players/PlayerLinks'
 import EditPencil from '../components/players/EditPencil'
 import { useEditPlayer } from '../components/players/EditPlayerDrawer'
 import { useRoster } from '../lib/rosterStore'
+import { useAuth } from '../lib/auth'
 import MatchEditor from '../components/match/MatchEditor'
 import ExportMenu from '../components/stats/ExportMenu'
 import PlayerSeasons from '../components/stats/PlayerSeasons'
@@ -45,7 +46,14 @@ const tabStyle = {
 
 const btn = { h: '44px', fontFamily: 'mono', fontSize: '14px', letterSpacing: '0.12em', textTransform: 'uppercase', borderRadius: '8px' }
 
-function NoStats({ player, onSync }) {
+function NoStats({ player, onSync, readOnly }) {
+  if (readOnly) {
+    return (
+      <Card>
+        <Text fontSize="15px" color="brand.gray">Todavía no hay estadísticas cargadas para este perfil.</Text>
+      </Card>
+    )
+  }
   return (
     <Card>
       <Text fontSize="15px" color="brand.gray">
@@ -71,6 +79,10 @@ function NoStats({ player, onSync }) {
 //   Temporadas   barras por año y la tabla completa (stats/seasons)
 //   Carga manual el editor de players/{slug}/matches de siempre
 // La pestaña activa va en la URL (?tab=carga) para poder compartirla.
+//
+// Con una cuenta de jugador (sólo ve su propia ficha) queda en modo
+// lectura: sin Carga manual, sin editar, sin cambiar de jugador y sin
+// los atajos a Clubes, Estadísticas o Sincronización.
 export default function PlayerDetailPage() {
   const { slug } = useParams()
   const navigate = useNavigate()
@@ -83,8 +95,9 @@ export default function PlayerDetailPage() {
   const controller = usePlayerMatches(slug)
   const { stats, loading: statsLoading } = usePlayerStats(slug)
   const [params, setParams] = useSearchParams()
-  const tabIndex = Math.max(0, TABS.findIndex((t) => t.id === params.get('tab')))
   const edit = useEditPlayer(player)
+  const { isPlayer: readOnly } = useAuth()
+  const tabs = readOnly ? TABS.filter((t) => t.id !== 'carga') : TABS
 
   if (!player) {
     return (
@@ -108,6 +121,7 @@ export default function PlayerDetailPage() {
   const season = stats.seasons[year] || stats.season
   const prev = stats.seasons[year - 1]
   const hasStats = Boolean(player.apiPlayerId)
+  const tabIndex = Math.max(0, tabs.findIndex((t) => t.id === params.get('tab')))
   const goTab = (id) => setParams(id === 'resumen' ? {} : { tab: id }, { replace: true })
 
   const kpis = [
@@ -137,7 +151,7 @@ export default function PlayerDetailPage() {
         bgSize="cover" bgPosition="center right"
       >
         <Flex maxW="1360px" mx="auto" direction="column" gap={5}>
-          <Flex wrap="wrap" align="center" justify="space-between" gap={3}>
+          {!readOnly && <Flex wrap="wrap" align="center" justify="space-between" gap={3}>
             <Button as={RouterLink} to={`/jugadores?j=${player.slug}`} variant="link" leftIcon={<FiArrowLeft />} color="brand.orange"
               fontFamily="mono" fontSize="14px" letterSpacing="0.14em" textTransform="uppercase" minH="44px" fontWeight="normal">
               Jugadores
@@ -153,7 +167,7 @@ export default function PlayerDetailPage() {
                 ))}
               </Select>
             </Flex>
-          </Flex>
+          </Flex>}
 
           <Flex wrap="wrap" gap={{ base: 5, md: 7 }} align="flex-end">
             <MotionBox
@@ -177,7 +191,7 @@ export default function PlayerDetailPage() {
               </Flex>
               <Flex align="center" gap={2} minW={0}>
                 <Text as="h1" fontFamily="heading" fontSize={{ base: '54px', md: '96px' }} lineHeight={0.86} letterSpacing="0.01em" minW={0}>{player.name}</Text>
-                <EditPencil onClick={() => edit.open()} label={`Editar a ${player.name}`} alignSelf={{ base: 'center', md: 'flex-start' }} mt={{ md: 2 }} />
+                {!readOnly && <EditPencil onClick={() => edit.open()} label={`Editar a ${player.name}`} alignSelf={{ base: 'center', md: 'flex-start' }} mt={{ md: 2 }} />}
               </Flex>
               <Flex wrap="wrap" align="center" gap={2.5}>
                 <Flex align="center" gap={2} px={3.5} py={1.5} borderRadius="full" bg="rgba(13,12,11,.75)" border="1px solid" borderColor="#2e2825"
@@ -187,22 +201,22 @@ export default function PlayerDetailPage() {
                 {nextLabel && <Text fontSize="14px" color="brand.gray">Próximo: {nextLabel}</Text>}
               </Flex>
               <Flex wrap="wrap" gap={2.5} mt={1}>
-                <Button {...btn} leftIcon={<FiEdit3 />} bg="brand.orange" color="brand.brown" _hover={{ bg: '#ffb35e' }} onClick={() => goTab('carga')}>
+                {!readOnly && <Button {...btn} leftIcon={<FiEdit3 />} bg="brand.orange" color="brand.brown" _hover={{ bg: '#ffb35e' }} onClick={() => goTab('carga')}>
                   Cargar resultado
-                </Button>
-                {club && (
+                </Button>}
+                {!readOnly && club && (
                   <Button {...btn} leftIcon={<FiShield />} variant="outline" borderColor="brand.brownDark" color="brand.amber"
                     _hover={{ bg: 'brand.brownLight', color: 'white' }} onClick={() => navigate(`/club/${club.id}`)}>
                     Cargar para todo el club
                   </Button>
                 )}
-                {hasStats && (
+                {!readOnly && hasStats && (
                   <Button {...btn} leftIcon={<FiBarChart2 />} variant="outline" borderColor="brand.brownDark" color="brand.amber"
                     _hover={{ bg: 'brand.brownLight', color: 'white' }} onClick={() => navigate(`/estadisticas?club=${player.clubId || ''}`)}>
                     Comparar
                   </Button>
                 )}
-                <PlayerLinks player={player} btn={btn} onEdit={edit.open} />
+                <PlayerLinks player={player} btn={btn} onEdit={readOnly ? undefined : edit.open} />
                 {hasStats && <Box alignSelf="center"><ExportMenu name={exportFileName(player.slug, year)} sheets={exportSheets} isDisabled={statsLoading} /></Box>}
               </Flex>
             </Flex>
@@ -210,7 +224,7 @@ export default function PlayerDetailPage() {
         </Flex>
       </Box>
 
-      {edit.drawer}
+      {!readOnly && edit.drawer}
 
       {/* Temporada en curso vs. la anterior */}
       {hasStats && season && (
@@ -236,15 +250,15 @@ export default function PlayerDetailPage() {
 
       <Box px={{ base: 4, md: 6, lg: 10 }} pb={14}>
         <Box maxW="1360px" mx="auto">
-          <Tabs index={tabIndex} onChange={(i) => goTab(TABS[i].id)} variant="unstyled" isLazy>
+          <Tabs index={tabIndex} onChange={(i) => goTab(tabs[i].id)} variant="unstyled" isLazy>
             <Box overflowX="auto" mb={6} borderBottom="1px solid" borderColor="#2e2825">
               <TabList gap={{ base: 5, md: 7 }}>
-                {TABS.map((t) => <Tab key={t.id} {...tabStyle}>{t.label}</Tab>)}
+                {tabs.map((t) => <Tab key={t.id} {...tabStyle}>{t.label}</Tab>)}
               </TabList>
             </Box>
             <TabPanels>
               <TabPanel p={0}>
-                {!hasStats ? <NoStats player={player} onSync={() => navigate('/sincronizacion')} /> : statsLoading ? (
+                {!hasStats ? <NoStats player={player} readOnly={readOnly} onSync={() => navigate('/sincronizacion')} /> : statsLoading ? (
                   <Flex justify="center" py={12}><Spinner color="brand.amber" /></Flex>
                 ) : (
                   <Flex direction="column" gap={5}>
@@ -260,12 +274,12 @@ export default function PlayerDetailPage() {
                 )}
               </TabPanel>
               <TabPanel p={0}>
-                {!hasStats ? <NoStats player={player} onSync={() => navigate('/sincronizacion')} /> : statsLoading ? (
+                {!hasStats ? <NoStats player={player} readOnly={readOnly} onSync={() => navigate('/sincronizacion')} /> : statsLoading ? (
                   <Flex justify="center" py={12}><Spinner color="brand.amber" /></Flex>
                 ) : <MatchLog key={slug} player={player} stats={stats} />}
               </TabPanel>
               <TabPanel p={0}>
-                {!hasStats ? <NoStats player={player} onSync={() => navigate('/sincronizacion')} /> : statsLoading ? (
+                {!hasStats ? <NoStats player={player} readOnly={readOnly} onSync={() => navigate('/sincronizacion')} /> : statsLoading ? (
                   <Flex justify="center" py={12}><Spinner color="brand.amber" /></Flex>
                 ) : (
                   <Flex direction="column" gap={5}>
@@ -274,13 +288,13 @@ export default function PlayerDetailPage() {
                   </Flex>
                 )}
               </TabPanel>
-              <TabPanel p={0}>
+              {!readOnly && <TabPanel p={0}>
                 <Box maxW="900px">
                   {/* key={slug}: al saltar de un jugador a otro remonta el editor
                       entero, así no quedan formularios con estado viejo. */}
                   <MatchEditor key={slug} controller={controller} deleteDescription={deleteDescription} />
                 </Box>
-              </TabPanel>
+              </TabPanel>}
             </TabPanels>
           </Tabs>
         </Box>

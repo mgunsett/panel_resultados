@@ -1,5 +1,5 @@
 import { useEffect } from 'react'
-import { Routes, Route, Navigate, useLocation } from 'react-router-dom'
+import { Routes, Route, Navigate, useLocation, useParams } from 'react-router-dom'
 import { Box, Spinner } from '@chakra-ui/react'
 import { AnimatePresence } from 'framer-motion'
 import { useAuth } from './lib/auth'
@@ -18,7 +18,8 @@ import SyncPage from './pages/SyncPage'
 import NewPlayerPage from './pages/NewPlayerPage'
 import StatsPage from './pages/StatsPage'
 
-// Gate general: sin sesión no se ve nada del panel.
+// Gate general: sin sesión no se ve nada del panel. Qué rutas ve cada
+// cuenta lo decide RoleRoutes (admin: todo; jugador: su ficha).
 function Protected({ children }) {
   const { user, loading } = useAuth()
   const roster = useRoster()
@@ -51,6 +52,35 @@ function useScrollToTop(pathname) {
   useEffect(() => {
     window.scrollTo({ top: 0, behavior: 'auto' })
   }, [pathname])
+}
+
+// Cuenta de jugador: sólo su ficha. Cualquier otra ruta (inicio, otro
+// jugador, clubes, sincronización…) vuelve a /jugador/<su slug>.
+function OwnPlayerOnly({ to, children }) {
+  const { slug } = useParams()
+  const { playerSlug } = useAuth()
+  return slug === playerSlug ? children : <Navigate to={to} replace />
+}
+
+function PlayerRoutes() {
+  const location = useLocation()
+  const { playerSlug } = useAuth()
+  useScrollToTop(location.pathname)
+  const own = `/jugador/${playerSlug}`
+
+  return (
+    <AppShell>
+      <Routes location={location}>
+        <Route path="jugador/:slug" element={<OwnPlayerOnly to={own}><PageTransition><PlayerDetailPage /></PageTransition></OwnPlayerOnly>} />
+        <Route path="*" element={<Navigate to={own} replace />} />
+      </Routes>
+    </AppShell>
+  )
+}
+
+function RoleRoutes() {
+  const { isPlayer } = useAuth()
+  return isPlayer ? <PlayerRoutes /> : <PanelRoutes />
 }
 
 // Las rutas del panel viven dentro del AppShell, que queda montado
@@ -88,7 +118,7 @@ export default function App() {
         path="/*"
         element={
           <Protected>
-            <PanelRoutes />
+            <RoleRoutes />
           </Protected>
         }
       />

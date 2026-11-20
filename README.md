@@ -84,26 +84,42 @@ Dónde queda cada cosa:
   `create-player` con el Admin SDK. Lleva los claims `role: 'player'` y
   `slug`. En Firestore sólo queda `playerAccounts/{slug}` con el uid y el
   email; la contraseña no se guarda en ningún lado y se muestra una sola vez.
-  Las cuentas de jugador no pueden entrar al panel ni usar sus funciones.
+  Con esa cuenta el jugador entra al panel y sólo ve su propia ficha (ver
+  "Acceso por rol").
 
 ### Antes de activar las cuentas
 
-Las reglas actuales dejan escribir a **cualquier** usuario logueado. Una
-cuenta de jugador podría editar los partidos de todos. Por eso la función no
-crea cuentas hasta que `PLAYER_ACCOUNTS_ENABLED=true` (sin eso, el alta anda
-igual destildando "Crear la cuenta del jugador ahora"). Antes de activarlo,
-cambiá en `firestore.rules` y `storage.rules` de las landings el
-`request.auth != null` de escritura por algo como:
+Las reglas desplegadas hoy dejan escribir a **cualquier** usuario logueado:
+una cuenta de jugador podría editar los partidos de todos. Por eso la
+función no crea cuentas hasta que `PLAYER_ACCOUNTS_ENABLED=true` (sin eso,
+el alta anda igual destildando "Crear la cuenta del jugador ahora").
+Activalo recién después de desplegar las reglas de
+[`firebase/`](firebase/README.md). `PLAYER_LOGIN_DOMAIN` (servidor) y
+`VITE_PLAYER_LOGIN_DOMAIN` (panel) son el dominio que se agrega al usuario
+para armar el email de login.
 
-```
-function isAdmin() { return request.auth != null && request.auth.token.role != 'player'; }
-function isOwner(slug) { return request.auth != null && request.auth.token.role == 'player' && request.auth.token.slug == slug; }
-// players/{slug} y stats: allow write: if isAdmin();
-// players/{slug}/matches/{id}: allow write: if isAdmin() || isOwner(slug);
-```
+## Acceso por rol
 
-y desplegalas. `PLAYER_LOGIN_DOMAIN` (servidor) y `VITE_PLAYER_LOGIN_DOMAIN`
-(panel) son el dominio que se agrega al usuario para armar el email de login.
+Cada cuenta tiene un rol, guardado como custom claim de Firebase Auth:
+
+| Rol | Quién | Qué ve |
+| --- | --- | --- |
+| `admin` | equipo de LED Sports, con su email en `panelAdmins` (Firestore) | todo el panel |
+| `player` (+ `slug`) | la cuenta que crea el alta de jugadores | sólo `/jugador/<su slug>`, en lectura |
+
+- **Jugador**: cualquier otra ruta lo devuelve a su ficha. Sin barra de
+  secciones, sin Sincronizar, sin Carga manual, sin editar ni cambiar de
+  jugador. Ve Resumen, Partidos, Temporadas, Landing, Fotos y Exportar.
+- **Admin**: la primera vez que entra, `netlify/functions/session-role.mjs`
+  le pone `role: 'admin'` si su email está en `panelAdmins`. Mientras esa
+  colección esté vacía, toda cuenta que no sea de jugador entra como admin
+  (como antes), así nadie queda afuera.
+- Las funciones de Netlify (`api-football`, `create-player`) sólo atienden
+  admins (`requireAdmin` en `netlify/lib/firebaseAdmin.js`).
+- La puerta de verdad son las reglas: [`firebase/README.md`](firebase/README.md)
+  tiene las nuevas, qué cambia y el orden para desplegarlas.
+- En local (`pnpm dev`, sin funciones) el panel entra como admin sin rol.
+  Para probar roles usá `netlify dev`.
 
 ## Editar un jugador
 
@@ -120,7 +136,7 @@ edita.
   sincronización lo aplican encima del archivo. **Volver a players.js**
   descarta esos cambios.
 - Las landings no leen el doc raíz `players/{slug}`, así que no cambian. Con
-  las reglas actuales alcanza; si se aplica el `isAdmin()` de arriba, también.
+  las reglas actuales alcanza y con las de `firebase/` también.
 
 ## Sumar un jugador a mano
 
@@ -149,11 +165,10 @@ igual con un wordmark tipográfico y un degradado de respaldo.
 
 ## Reglas de Firebase
 
-Ya están desplegadas y son compatibles con este panel: `players/{slug}` usa un
-wildcard y autoriza la escritura con `allow write: if request.auth != null`, sin
-restricción por slug ni por uid. Cualquier admin logueado puede escribirle a
-todos los jugadores. Están versionadas en cada landing (`firestore.rules` /
-`storage.rules`), las 13 con contenido idéntico.
+Las desplegadas hoy (versionadas en cada landing, las 13 iguales) autorizan
+la escritura con `allow write: if request.auth != null`: cualquier cuenta
+logueada escribe en todos los jugadores. Las nuevas, con roles, están en
+[`firebase/`](firebase/README.md), listas y sin desplegar.
 
 ## Sincronización con API-Football
 
