@@ -1,8 +1,9 @@
-import { useEffect, useState, useCallback } from 'react'
+import { useEffect, useMemo, useState, useCallback } from 'react'
 import { emptyPlayerStats, fetchPlayerStats } from '../lib/playerStats'
 import { players } from '../data/players'
 import { getClub } from '../data/clubs'
 import { fetchPlayerMatches } from '../lib/matches'
+import { enrichRow } from '../lib/homeData'
 
 // Estadísticas de un jugador. `reload` vuelve a leer (después de
 // completar el historial, por ejemplo).
@@ -77,4 +78,12 @@ export function useHomeData(refreshKey) {
   }, [refreshKey])
 
   return { rows, loading }
+}
+
+// Las mismas filas con el estado de la landing y el próximo partido
+// ya calculados (lista de Jugadores).
+export function usePanelRows(refreshKey) {
+  const { rows, loading } = useHomeData(refreshKey)
+  const enriched = useMemo(() => rows.map(enrichRow), [rows])
+  return { rows: enriched, loading }
 }

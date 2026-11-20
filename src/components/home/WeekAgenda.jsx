@@ -68,7 +68,7 @@ export default function WeekAgenda({ week }) {
           transition={{ duration: 0.2 }}
         >
           {current.length === 0 ? (
-            <Box p={4.5} borderRadius="14px" border="1px dashed" borderColor="brand.brownDark" color="brand.gray" fontSize="14px">
+            <Box p={5} borderRadius="14px" border="1px dashed" borderColor="brand.brownDark" color="brand.gray" fontSize="14px">
               Ningún jugador juega este día.
             </Box>
           ) : (

@@ -6,9 +6,7 @@ import { AnimatePresence, motion, useReducedMotion } from 'framer-motion'
 import { players } from '../data/players'
 import { useHomeData } from '../hooks/usePlayerStats'
 import { useSyncAll } from '../lib/syncContext'
-import {
-  matchDate, formatDay, formatTime, opponentLabel, playerStatus, weekMatches, lastApiUpdate, relativeTime,
-} from '../lib/homeData'
+import { enrichRow, weekMatches, lastApiUpdate, relativeTime } from '../lib/homeData'
 import WeekAgenda from '../components/home/WeekAgenda'
 import SeasonRanking from '../components/home/SeasonRanking'
 import ShowcaseCard from '../components/home/ShowcaseCard'
@@ -40,14 +38,7 @@ export default function HomePage() {
   const [picked, setPicked] = useState(null)
   const profileRef = useRef(null)
 
-  const rows = useMemo(() => raw.map((r) => {
-    const next = r.matches?.next
-    const nextDate = matchDate(next)
-    const nextLabel = next?.home_team
-      ? `${nextDate ? `${formatDay(nextDate)}${next.match_time || next.match_datetime ? ` ${next.match_time || formatTime(nextDate)}` : ''} · ` : next.match_date ? `${next.match_date} · ` : ''}${opponentLabel(next, r.club)}`
-      : ''
-    return { ...r, status: playerStatus(r.player, r.club, r.matches), nextDate, nextLabel }
-  }), [raw])
+  const rows = useMemo(() => raw.map(enrichRow), [raw])
 
   const week = useMemo(() => weekMatches(rows), [rows])
   const updated = useMemo(() => lastApiUpdate(rows), [rows])
