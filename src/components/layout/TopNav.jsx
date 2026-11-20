@@ -6,7 +6,7 @@ import { useLocation, useNavigate } from 'react-router-dom'
 import { motion } from 'framer-motion'
 import { useAuth } from '../../lib/auth'
 import { useSyncAll } from '../../lib/syncContext'
-import { nextScheduledSync, formatTime } from '../../lib/homeData'
+import { nextScheduledSync, formatTime, formatWhen } from '../../lib/homeData'
 import { NAV_ITEMS, isItemActive } from './SidebarNav'
 import BrandLogo from '../ui/BrandLogo'
 
@@ -21,8 +21,8 @@ function SyncStatus() {
   const label = running
     ? `Sincronizando ${progress}`
     : lastRunAt
-      ? `Sincronizado ${formatTime(lastRunAt)} · próxima ${formatTime(nextScheduledSync())}`
-      : `Automática cada 3 h · próxima ${formatTime(nextScheduledSync())}`
+      ? `Sincronizado ${formatTime(lastRunAt)} · próxima ${formatWhen(nextScheduledSync())}`
+      : `Automática · próxima ${formatWhen(nextScheduledSync())}`
   return (
     <HStack
       spacing={2} px={3.5} h="40px" borderRadius="full" bg="rgba(21,19,18,0.85)"

@@ -107,7 +107,7 @@ del último partido de cada jugador se actualizan solos desde
 
 | Archivo | Qué hace |
 | --- | --- |
-| `netlify/functions/sync-results.mjs` | Corre sola cada 3 horas (cron en UTC) |
+| `netlify/functions/sync-results.mjs` | Corre sola: lunes a viernes a las 06:00 y fines de semana a las 06:00 y 18:00 (Argentina) |
 | `netlify/functions/api-football.mjs` | Puente para el panel: estado, búsquedas y "Sincronizar ahora". Exige el token del admin logueado |
 | `netlify/lib/sync.js` | La lógica de sincronización |
 | `netlify/lib/mappers.js` | Traduce la respuesta de la API a nuestro formato |
@@ -159,7 +159,7 @@ En `/sincronizacion` → **Completar historial**:
   nunca. Sin bloquear, la próxima pasada lo reemplaza con lo de la API.
 - Si nada cambió, no se escribe nada.
 - Consumo: 2 requests por club en cada pasada, más 1 por club cuando
-  jugó. Con 13 clubes y una pasada cada 3 horas, unos 210 por día.
+  jugó. Con 13 clubes: unos 26 por día de semana y 52 por día de fin de semana.
 
 ### Puesta en marcha
 
