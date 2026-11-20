@@ -1,63 +1,33 @@
 import { useMemo, useState } from 'react'
-import {
-  Box, Flex, HStack, Text, Select, Spinner, Image, Avatar, ButtonGroup, Button,
-} from '@chakra-ui/react'
-import { useNavigate, useSearchParams } from 'react-router-dom'
+import { Box, Button, Flex, Select, Spinner, Text } from '@chakra-ui/react'
+import { useSearchParams } from 'react-router-dom'
+import { FiDownload } from 'react-icons/fi'
 import { useAllPlayersStats } from '../hooks/usePlayerStats'
-import { getClubsWithPlayers, playerInitials } from '../data/players'
-import { SEASON_COLUMNS, PER90_COLUMNS, MATCH_COLUMNS, PLAYER_COLUMNS } from '../lib/statsSchema'
+import { getClubsWithPlayers } from '../data/players'
 import { availableSeasons } from '../lib/playerStats'
-import { exportFileName } from '../lib/exporters'
-import PageContainer from '../components/layout/PageContainer'
-import PageHeader from '../components/layout/PageHeader'
-import DataTable from '../components/stats/DataTable'
-import ExportMenu from '../components/stats/ExportMenu'
-import SeasonSelect from '../components/stats/SeasonSelect'
+import { hasMinutes, lastMatchRows, matchRows, seasonRows, MIN_MINUTES_P90 } from '../lib/statsBoard'
 import { inputStyle } from '../components/ui/formStyles'
+import Leaderboards from '../components/stats/Leaderboards'
+import StatsTable from '../components/stats/StatsTable'
+import heroTexture from '../assets/fondo_led3.webp'
 
-// ─── ESTADÍSTICAS: COMPARAR Y EXPORTAR ───────────────────────────
-// Todos los jugadores en una tabla, filtrable por club y temporada.
-//   Temporada      totales del año (stats/seasons)
-//   Cada 90'       los mismos totales normalizados por minutos jugados
-//   Último partido la ficha de stats/last de cada uno
-//   Partidos       todos los partidos de todos, uno por fila
-// Exportar baja la vista actual; el Excel trae las cuatro en hojas.
+// ─── ESTADÍSTICAS ────────────────────────────────────────────────
+// Arriba los líderes de cada rubro; abajo la tabla completa con el
+// panel para exportar. Filtros en la URL: ?club=…&temporada=…&modo=c90
 
-const VIEWS = [
-  { id: 'temporada', label: 'Temporada' },
-  { id: 'p90', label: "Cada 90'" },
-  { id: 'ultimo', label: 'Último partido' },
-  { id: 'partidos', label: 'Partidos' },
+const MODES = [
+  { id: 'total', label: 'Totales' },
+  { id: 'c90', label: "Cada 90'" },
 ]
-
-const P90_VIEW_COLUMNS = [
-  ...SEASON_COLUMNS.filter((c) => ['partidos', 'minutos', 'rating', 'precisionPases'].includes(c.key)),
-  ...PER90_COLUMNS,
-]
-
-function PlayerCell({ row }) {
-  return (
-    <HStack spacing={2.5} minW="170px">
-      <Avatar size="xs" src={row.photo} name={playerInitials(row.jugador)} bg="brand.brownLight" color="brand.amber" />
-      <Box minW={0}>
-        <Text fontSize="sm" color="white" noOfLines={1}>{row.jugador}</Text>
-        <HStack spacing={1}>
-          {row.clubCrest && <Image src={row.clubCrest} boxSize="12px" objectFit="contain" alt="" />}
-          <Text fontSize="10px" color="brand.gray" noOfLines={1}>{row.club}</Text>
-        </HStack>
-      </Box>
-    </HStack>
-  )
-}
 
 export default function StatsPage() {
-  const navigate = useNavigate()
   const [params, setParams] = useSearchParams()
   const { rows, loading } = useAllPlayersStats()
   const clubs = getClubsWithPlayers()
+  const [exportOpen, setExportOpen] = useState(false)
 
-  const view = VIEWS.some((v) => v.id === params.get('vista')) ? params.get('vista') : 'temporada'
   const clubId = params.get('club') || ''
+  const p90 = params.get('modo') === 'c90'
   const setParam = (k, v) => {
     const next = new URLSearchParams(params)
     if (v) next.set(k, v); else next.delete(k)
@@ -69,105 +39,109 @@ export default function StatsPage() {
     rows.forEach(({ stats }) => availableSeasons(stats).forEach((y) => set.add(y)))
     return [...set].sort((a, b) => b - a)
   }, [rows])
-  const [pickedSeason, setPickedSeason] = useState(null)
-  const season = pickedSeason ?? seasons[0] ?? new Date().getFullYear()
+  const asked = Number(params.get('temporada'))
+  const season = seasons.includes(asked) ? asked : seasons[0] ?? new Date().getFullYear()
 
-  // Sólo jugadores con estadísticas (los DT y los que no tienen
-  // apiPlayerId no suman nada a la comparación).
-  const scoped = useMemo(
-    () => rows.filter(({ player }) => player.apiPlayerId && (!clubId || player.clubId === clubId)),
-    [rows, clubId],
-  )
+  const scoped = useMemo(() => rows.filter(({ player }) => !clubId || player.clubId === clubId), [rows, clubId])
+  const all = useMemo(() => seasonRows(scoped, season), [scoped, season])
+  const shown = useMemo(() => (p90 ? all.filter(hasMinutes) : all), [all, p90])
+  const last = useMemo(() => lastMatchRows(scoped), [scoped])
+  const matches = useMemo(() => matchRows(scoped, season), [scoped, season])
 
-  const ident = ({ player, club }) => ({
-    slug: player.slug, jugador: player.name, club: club?.name || '—', photo: player.photo, clubCrest: club?.crest,
-  })
+  const club = clubs.find((c) => c.id === clubId)
+  const clubLabel = club?.name || 'Todos los clubes'
 
-  const seasonRows = useMemo(
-    () => scoped.map((r) => ({ ...ident(r), ...(r.stats.seasons[season] || {}) })),
-    [scoped, season],
-  )
-  const lastRows = useMemo(
-    () => scoped.filter((r) => r.stats.last).map((r) => ({ ...ident(r), ...r.stats.last })),
-    [scoped],
-  )
-  const matchRows = useMemo(
-    () => scoped.flatMap((r) => (r.stats.history[season] || []).map((m) => ({ ...ident(r), ...m }))),
-    [scoped, season],
-  )
-
-  const sheets = [
-    { sheet: `Temporada ${season}`, columns: [...PLAYER_COLUMNS, ...SEASON_COLUMNS], rows: seasonRows },
-    { sheet: `Cada 90 ${season}`, columns: [...PLAYER_COLUMNS, ...P90_VIEW_COLUMNS], rows: seasonRows },
-    { sheet: 'Último partido', columns: [...PLAYER_COLUMNS, ...MATCH_COLUMNS], rows: lastRows },
-    { sheet: `Partidos ${season}`, columns: [...PLAYER_COLUMNS, ...MATCH_COLUMNS], rows: matchRows },
-  ]
-  const current = sheets[VIEWS.findIndex((v) => v.id === view)]
-  // La vista actual primero: es la que baja el CSV.
-  const exportSheets = [current, ...sheets.filter((s) => s !== current)]
-
-  const tableColumns = view === 'temporada' ? SEASON_COLUMNS : view === 'p90' ? P90_VIEW_COLUMNS : MATCH_COLUMNS
-  const tableRows = current.rows
-  const clubName = clubs.find((c) => c.id === clubId)?.name
+  const openExport = () => {
+    setExportOpen(true)
+    requestAnimationFrame(() => document.getElementById('tabla')?.scrollIntoView({ behavior: 'smooth', block: 'start' }))
+  }
 
   return (
-    <PageContainer maxW="1400px">
-      <PageHeader eyebrow={`${scoped.length} jugadores con estadísticas`} title="Estadísticas">
-        <ExportMenu
-          name={exportFileName('estadisticas', clubName || 'todos', view === 'ultimo' ? 'ultimo' : season)}
-          sheets={exportSheets} isDisabled={loading}
-        />
-      </PageHeader>
-
-      <Flex gap={3} mb={4} wrap="wrap" align="center">
-        <ButtonGroup size="sm" isAttached variant="outline" overflowX="auto" maxW="100%">
-          {VIEWS.map((v) => (
+    <Box>
+      <Box
+        px={{ base: 4, md: 6, lg: 10 }} pt={{ base: 6, md: 7 }} pb={5} borderBottom="1px solid" borderColor="#2e2825"
+        bgImage={`linear-gradient(90deg, rgba(13,12,11,.97) 0%, rgba(13,12,11,.88) 50%, rgba(13,12,11,.55) 100%), url(${heroTexture})`}
+        bgSize="cover" bgPosition="center right"
+      >
+        <Flex maxW="1360px" mx="auto" direction="column" gap={5}>
+          <Flex wrap="wrap" align="flex-end" justify="space-between" gap={3.5}>
+            <Flex direction="column" gap={1.5}>
+              <Text fontFamily="mono" fontSize="12px" letterSpacing="0.16em" textTransform="uppercase" color="brand.orange">
+                {loading ? 'Cargando…' : `${all.length} jugadores · temporada ${season}${club ? ` · ${club.name}` : ''}`}
+              </Text>
+              <Text as="h1" fontFamily="heading" fontSize={{ base: '56px', md: '72px' }} lineHeight={0.88}>Estadísticas</Text>
+              <Text fontSize="15px" color="brand.amber">Quién lidera cada rubro y la tabla con todos los números, lista para exportar.</Text>
+            </Flex>
             <Button
-              key={v.id} onClick={() => setParam('vista', v.id === 'temporada' ? '' : v.id)}
-              fontFamily="mono" fontSize="xs" letterSpacing="wider" textTransform="uppercase"
-              borderColor="brand.brownDark"
-              bg={view === v.id ? 'brand.amber' : 'transparent'}
-              color={view === v.id ? 'brand.brown' : 'brand.gray'}
-              _hover={{ bg: view === v.id ? 'brand.amber' : 'brand.brownLight' }}
+              leftIcon={<FiDownload />} onClick={openExport} variant="outline" minH="44px" borderColor="#423a35" color="brand.amber"
+              _hover={{ bg: '#2a2420', color: 'white' }} fontFamily="mono" fontSize="14px" letterSpacing="0.12em" textTransform="uppercase"
+              isDisabled={loading}
             >
-              {v.label}
+              Exportar
             </Button>
-          ))}
-        </ButtonGroup>
+          </Flex>
 
-        <Select {...inputStyle} size="sm" h="32px" w="190px" value={clubId} onChange={(e) => setParam('club', e.target.value)}>
-          <option value="" style={{ background: '#1E1B19' }}>Todos los clubes</option>
-          {clubs.map((c) => <option key={c.id} value={c.id} style={{ background: '#1E1B19' }}>{c.name}</option>)}
-        </Select>
+          <Flex wrap="wrap" align="center" gap={2.5}>
+            <Select {...inputStyle} aria-label="Club" h="44px" w={{ base: '100%', sm: '220px' }} value={clubId} onChange={(e) => setParam('club', e.target.value)}>
+              <option value="" style={{ background: '#1E1B19' }}>Todos los clubes</option>
+              {clubs.map((c) => <option key={c.id} value={c.id} style={{ background: '#1E1B19' }}>{c.name}</option>)}
+            </Select>
+            {seasons.length > 0 && (
+              <Select {...inputStyle} aria-label="Temporada" h="44px" w={{ base: 'calc(50% - 5px)', sm: '170px' }} value={season}
+                onChange={(e) => setParam('temporada', Number(e.target.value) === seasons[0] ? '' : e.target.value)}>
+                {seasons.map((y) => <option key={y} value={y} style={{ background: '#1E1B19' }}>Temporada {y}</option>)}
+              </Select>
+            )}
+            <Flex role="group" aria-label="Cómo contar" p="3px" borderRadius="full" border="1px solid" borderColor="#423a35" bg="#151312">
+              {MODES.map((m) => {
+                const on = (m.id === 'c90') === p90
+                return (
+                  <Box
+                    key={m.id} as="button" type="button" aria-pressed={on} onClick={() => setParam('modo', m.id === 'c90' ? 'c90' : '')}
+                    px={4} minH="36px" borderRadius="full" fontFamily="mono" fontSize="14px" letterSpacing="0.1em" textTransform="uppercase"
+                    bg={on ? 'brand.orange' : 'transparent'} color={on ? 'brand.brown' : 'brand.gray'} _hover={{ color: on ? 'brand.brown' : 'white' }}
+                    _focusVisible={{ outline: '2px solid', outlineColor: 'brand.orange', outlineOffset: '2px' }}
+                  >
+                    {m.label}
+                  </Box>
+                )
+              })}
+            </Flex>
+            <Text fontSize="14px" color="brand.gray">
+              {p90 ? `Solo jugadores con ${MIN_MINUTES_P90}' o más, para que nadie lidere con dos partidos.` : 'Números acumulados de la temporada.'}
+            </Text>
+          </Flex>
+        </Flex>
+      </Box>
 
-        {view !== 'ultimo' && seasons.length > 0 && (
-          <SeasonSelect seasons={seasons} value={season} onChange={setPickedSeason} w="150px" />
-        )}
-      </Flex>
+      <Box px={{ base: 4, md: 6, lg: 10 }} pt={6} pb={14}>
+        <Flex maxW="1360px" mx="auto" direction="column" gap={7}>
+          {loading ? (
+            <Flex justify="center" py={16}><Spinner color="brand.amber" /></Flex>
+          ) : (
+            <>
+              <Flex as="section" aria-labelledby="lideres" direction="column" gap={3.5}>
+                <Flex wrap="wrap" align="baseline" justify="space-between" gap={2}>
+                  <Text as="h2" id="lideres" fontFamily="heading" fontSize="36px" lineHeight={1}>Líderes {season}</Text>
+                  <Text fontSize="14px" color="brand.gray">Tocá un jugador para abrir su ficha</Text>
+                </Flex>
+                {all.length ? (
+                  <Leaderboards rows={shown} p90={p90} />
+                ) : (
+                  <Text fontSize="15px" color="brand.gray">No hay estadísticas de {season} para este filtro.</Text>
+                )}
+              </Flex>
 
-      {loading ? (
-        <Flex justify="center" py={16}><Spinner color="brand.amber" /></Flex>
-      ) : (
-        <>
-          <DataTable
-            key={view}
-            columns={tableColumns}
-            rows={tableRows}
-            rowKey={(r, i) => `${r.slug}-${r.fixtureId || ''}-${i}`}
-            lead={{ label: 'Jugador', render: (r) => <PlayerCell row={r} />, sortValue: (r) => r.jugador }}
-            defaultSort={view === 'partidos' ? { key: 'fecha', dir: 'desc' } : view === 'ultimo' ? { key: 'rating', dir: 'desc' } : { key: 'minutos', dir: 'desc' }}
-            highlight={view !== 'partidos'}
-            onRowClick={(r) => navigate(`/jugador/${r.slug}${view === 'partidos' ? '?tab=partidos' : ''}`)}
-            emptyText={view === 'partidos'
-              ? `No hay partidos guardados de ${season}. Completá el historial desde Sincronización.`
-              : 'No hay datos para este filtro.'}
-          />
-          <Text fontSize="xs" color="brand.gray" mt={2}>
-            Tocá un encabezado para ordenar y una fila para abrir la ficha del jugador.
-            {view !== 'partidos' && ' En naranja, el mejor valor de cada columna.'}
-          </Text>
-        </>
-      )}
-    </PageContainer>
+              <StatsTable
+                key={`${clubId}-${season}`}
+                rows={shown} baseRows={all} lastRows={last} matchRows={matches}
+                p90={p90} season={season} clubLabel={clubLabel} clubSlug={club?.name}
+                exportOpen={exportOpen} onToggleExport={() => setExportOpen((o) => !o)}
+              />
+            </>
+          )}
+        </Flex>
+      </Box>
+    </Box>
   )
 }
