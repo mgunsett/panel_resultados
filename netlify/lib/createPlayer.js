@@ -1,6 +1,6 @@
 import {
   checkSlug, loginEmail, slugify, DEFAULT_LOGIN_DOMAIN, USERNAME_RE,
-  PLAYERS, PLAYER_ACCOUNTS,
+  PLAYERS, PLAYER_ACCOUNTS, PROFILE_KEYS,
 } from '../../src/lib/roster.js'
 
 // ─── ALTA DE JUGADOR (servidor) ──────────────────────────────────
@@ -37,8 +37,6 @@ const httpsUrl = (v) => {
     return fail(400, `El link ${s} no es válido.`)
   }
 }
-
-const PROFILE_KEYS = ['birthDate', 'birthPlace', 'nationality', 'height', 'weight', 'position', 'number', 'foot']
 
 export async function createPlayer({ db, auth, roster, payload, env = process.env, now = new Date().toISOString(), adminUid = null }) {
   const p = payload || {}

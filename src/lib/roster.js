@@ -13,9 +13,32 @@
 export const PLAYERS = 'players'
 export const PLAYER_ACCOUNTS = 'playerAccounts'
 
+// ─── EDICIÓN DESDE EL PANEL ──────────────────────────────────────
+// Los de alta en el panel se editan en su propio doc (son de Firestore).
+// Los de players.js no se pueden reescribir desde el navegador, así que
+// sus cambios van como "override" en players/{slug}: `panelEdit` (sólo
+// los campos que difieren del archivo) y `panelEdited: true` para
+// poder buscarlos. Las landings no leen ese doc raíz (sólo matches,
+// stats y shields), así que no se enteran.
+export const EDIT_KEYS = ['name', 'role', 'clubId', 'apiPlayerId', 'photo', 'landingUrl', 'driveUrl', 'profile']
+export const PROFILE_KEYS = ['birthDate', 'birthPlace', 'nationality', 'height', 'weight', 'position', 'number', 'foot']
+
+// Aplica un override a la ficha del archivo sin tocar el original.
+export function applyEdit(player, edit) {
+  if (!edit || typeof edit !== 'object') return player
+  const out = { ...player, edited: true }
+  EDIT_KEYS.forEach((k) => {
+    if (!(k in edit)) return
+    out[k] = k === 'profile' ? { ...(player.profile || {}), ...(edit.profile || {}) } : edit[k]
+  })
+  return out
+}
+
 // Une lo de los archivos con lo de Firestore. Si un slug o un id de
 // club ya existe en los archivos, gana el archivo: Firestore sólo suma.
-export function mergeRoster({ players, clubs, extraPlayers = [] }) {
+// `edits` = docs con panelEdit ({ slug, panelEdit }): pisan campos de
+// los jugadores del archivo.
+export function mergeRoster({ players, clubs, extraPlayers = [], edits = [] }) {
   const clubIds = new Set(clubs.map((c) => c.id))
   const slugs = new Set(players.map((p) => p.slug))
   const extraClubs = []
@@ -23,9 +46,13 @@ export function mergeRoster({ players, clubs, extraPlayers = [] }) {
     const c = p?.panelClub
     if (c?.id && !clubIds.has(c.id)) { clubIds.add(c.id); extraClubs.push(c) }
   })
+  const bySlug = new Map(edits.filter((e) => e?.slug && e.panelEdit).map((e) => [e.slug, e.panelEdit]))
   return {
     clubs: [...clubs, ...extraClubs],
-    players: [...players, ...extraPlayers.filter((p) => p?.slug && !slugs.has(p.slug))],
+    players: [
+      ...players.map((p) => (bySlug.has(p.slug) ? applyEdit(p, bySlug.get(p.slug)) : p)),
+      ...extraPlayers.filter((p) => p?.slug && !slugs.has(p.slug)),
+    ],
   }
 }
 

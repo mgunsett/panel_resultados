@@ -105,6 +105,23 @@ function isOwner(slug) { return request.auth != null && request.auth.token.role 
 y desplegalas. `PLAYER_LOGIN_DOMAIN` (servidor) y `VITE_PLAYER_LOGIN_DOMAIN`
 (panel) son el dominio que se agrega al usuario para armar el email de login.
 
+## Editar un jugador
+
+En el banner de **Jugadores** y en la ficha hay un lápiz discreto junto al
+nombre (abre todo) y otro chiquito en la esquina de **Landing** y **Fotos**
+(aparece al pasar el mouse; en el celular queda siempre visible). Abren el
+panel lateral **Editar jugador**: foto, nombre, rol, club, links, datos
+personales (con **Traer de API-Football**) e ID de API-Football. El slug no se
+edita.
+
+- **Alta en el panel**: los cambios van directo a su doc `players/{slug}`.
+- **De `players.js`**: el archivo no se toca. Lo que difiere se guarda en
+  `players/{slug}` como `panelEdit` (más `panelEdited: true`) y el panel y la
+  sincronización lo aplican encima del archivo. **Volver a players.js**
+  descarta esos cambios.
+- Las landings no leen el doc raíz `players/{slug}`, así que no cambian. Con
+  las reglas actuales alcanza; si se aplica el `isAdmin()` de arriba, también.
+
 ## Sumar un jugador a mano
 
 También se puede seguir editando [`src/data/players.js`](src/data/players.js) a
