@@ -1,123 +1,182 @@
-import { Box, Flex, VStack, SimpleGrid, Text, Image, useBreakpoint } from '@chakra-ui/react'
-import { FiUsers, FiShield, FiBarChart2, FiRefreshCw } from 'react-icons/fi'
-import { useNavigate } from 'react-router-dom'
-import { motion, useReducedMotion } from 'framer-motion'
-import { players, getClubsWithPlayers } from '../data/players'
-import { clubs } from '../data/clubs'
-
-import HomeShortcut from '../components/home/HomeShortcut'
-import PageContainer from '../components/layout/PageContainer'
-import heroBg from '../assets/fondo_led.webp'
-import heroBgMobile from '../assets/fondo_led2.webp'
-
-
-const HERO_SRC = heroBg
-const HERO_SRC_MOBILE = heroBgMobile
-
+import { useEffect, useMemo, useRef, useState } from 'react'
+import {
+  Box, Flex, HStack, Text, Input, InputGroup, InputLeftElement, Select, SimpleGrid, Spinner,
+} from '@chakra-ui/react'
+import { FiSearch } from 'react-icons/fi'
+import { AnimatePresence, motion, useReducedMotion } from 'framer-motion'
+import { players } from '../data/players'
+import { useHomeData } from '../hooks/usePlayerStats'
+import { useSyncAll } from '../lib/syncContext'
+import {
+  matchDate, formatDay, formatTime, opponentLabel, playerStatus, weekMatches, lastApiUpdate, relativeTime,
+} from '../lib/homeData'
+import WeekAgenda from '../components/home/WeekAgenda'
+import SeasonRanking from '../components/home/SeasonRanking'
+import ShowcaseCard from '../components/home/ShowcaseCard'
+import QuickProfile from '../components/home/QuickProfile'
+import heroTexture from '../assets/fondo_led3.webp'
 
 const MotionBox = motion(Box)
 
+const FILTERS = [
+  { id: 'todos', label: 'Todos' },
+  { id: 'ok', label: 'Al día' },
+  { id: 'rev', label: 'Para revisar' },
+]
+
+const norm = (s) => String(s || '').normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase()
+
+// ─── HOME: VITRINA DE JUGADORES ──────────────────────────────────
+// Portada con buscador, la semana de partidos, el ranking de la
+// temporada, la ficha rápida del jugador elegido y la grilla de todos.
+// Todo sale de Firestore (matches + stats de cada jugador): no gasta
+// consultas a la API.
 export default function HomePage() {
-  const navigate = useNavigate()
   const reduceMotion = useReducedMotion()
-  const clubCount = getClubsWithPlayers().length
-  
-  const breakpoint = useBreakpoint()
-  const heroBackground = breakpoint === 'base' ? HERO_SRC_MOBILE : HERO_SRC
+  const { lastRunAt } = useSyncAll()
+  const { rows: raw, loading } = useHomeData(lastRunAt?.getTime())
+  const [q, setQ] = useState('')
+  const [filter, setFilter] = useState('todos')
+  const [sort, setSort] = useState('next')
+  const [picked, setPicked] = useState(null)
+  const profileRef = useRef(null)
+
+  const rows = useMemo(() => raw.map((r) => {
+    const next = r.matches?.next
+    const nextDate = matchDate(next)
+    const nextLabel = next?.home_team
+      ? `${nextDate ? `${formatDay(nextDate)}${next.match_time || next.match_datetime ? ` ${next.match_time || formatTime(nextDate)}` : ''} · ` : next.match_date ? `${next.match_date} · ` : ''}${opponentLabel(next, r.club)}`
+      : ''
+    return { ...r, status: playerStatus(r.player, r.club, r.matches), nextDate, nextLabel }
+  }), [raw])
+
+  const week = useMemo(() => weekMatches(rows), [rows])
+  const updated = useMemo(() => lastApiUpdate(rows), [rows])
+
+  const cards = useMemo(() => {
+    const term = norm(q.trim())
+    let list = rows.filter((r) => !term || norm(r.player.name).includes(term) || norm(r.club?.name).includes(term))
+    if (filter !== 'todos') list = list.filter((r) => r.status.id === filter)
+    const by = {
+      next: (a, b) => (a.nextDate?.getTime() ?? Infinity) - (b.nextDate?.getTime() ?? Infinity),
+      rating: (a, b) => (b.stats.season?.rating ?? -1) - (a.stats.season?.rating ?? -1),
+      goles: (a, b) => (b.stats.season?.goles ?? -1) - (a.stats.season?.goles ?? -1),
+      name: (a, b) => a.player.name.localeCompare(b.player.name, 'es'),
+    }
+    return [...list].sort(by[sort])
+  }, [rows, q, filter, sort])
+
+  const pickedRow = rows.find((r) => r.player.slug === picked)
+
+  // Al elegir un jugador, la ficha rápida queda a la vista.
+  useEffect(() => {
+    if (picked && profileRef.current) {
+      profileRef.current.scrollIntoView({ behavior: reduceMotion ? 'auto' : 'smooth', block: 'nearest' })
+    }
+  }, [picked, reduceMotion])
 
   return (
     <Box>
       <Box
-        position="relative"
-        h={{ base: '58vh', md: '62vh', lg: '74vh' }}
-        minH={{ base: '360px', lg: '440px' }} 
-        bgColor="brand.dark"
+        as="header" px={{ base: 4, md: 8, lg: 12 }} pt={{ base: 8, md: 12 }} pb={{ base: 8, md: 10 }}
+        borderBottom="1px solid" borderColor="#2e2825"
+        bgImage={`linear-gradient(90deg, rgba(13,12,11,.96) 0%, rgba(13,12,11,.82) 45%, rgba(13,12,11,.35) 100%), url(${heroTexture})`}
+        bgSize="cover" bgPosition="center right"
       >
-        <Image
-          src={heroBackground}
-          fallbackSrc={HERO_SRC_MOBILE}
-          alt="Hero"
-          objectFit="cover"
-          w="100%"
-          h={{ base: '100%', md: '100%', lg: '102%' }}
-          position="absolute"
-          top={0}
-          left={0}
-          backgroundColor="brand.dark"
-        />
-       
-        <Flex
-          position="relative"
-          direction="column"
-          h="100%"
-          px={{ base: 5, md: 8, lg: 12 }}
-          pt={{ base: 6, md: 9 }}
-          pb={{ base: 5, md: 8 }}
+        <MotionBox
+          maxW="720px" display="flex" flexDirection="column" gap={3.5}
+          initial={reduceMotion ? { opacity: 0 } : { opacity: 0, y: 12 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.45, ease: 'easeOut' }}
         >
-          <MotionBox
-            initial={reduceMotion ? { opacity: 0 } : { opacity: 0, y: -10 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.45, ease: 'easeOut' }}
-          >
-            <VStack align="flex-start" spacing={3}>
-              
-              <Flex align="center" gap={2}>
-                <Box w="2px" h="30px" bg="brand.orange" />
-                <Text
-                  fontFamily="mono" fontSize={{ base: '10px', md: 'lg' }} color="brand.gray"
-                  textTransform="uppercase" letterSpacing="widest"
-                >
-                  Panel de administración de landings
-                </Text>
-              </Flex>
-            </VStack>
-          </MotionBox>
-        </Flex>
+          <Text fontFamily="mono" fontSize="13px" letterSpacing="0.22em" textTransform="uppercase" color="brand.orange">
+            Panel de administración de landings
+          </Text>
+          <Text as="h1" fontFamily="heading" fontSize={{ base: '48px', md: '72px', lg: '84px' }} lineHeight={0.9} letterSpacing="0.01em">
+            {players.length} jugadores.
+          </Text>
+          {updated && (
+            <Text fontSize="14px" color="brand.amber">Datos de API-Football actualizados {relativeTime(updated)}</Text>
+          )}
+          <InputGroup mt={1.5}>
+            <InputLeftElement h="54px" pl={2} pointerEvents="none" color="brand.gray"><FiSearch size={20} /></InputLeftElement>
+            <Input
+              type="search" value={q} onChange={(e) => setQ(e.target.value)} placeholder="Buscar jugador o club…"
+              aria-label="Buscar jugador o club"
+              h="54px" pl="48px" borderRadius="12px" bg="rgba(21,19,18,.9)" border="1px solid" borderColor="brand.brownDark"
+              fontSize="17px" color="white" _placeholder={{ color: '#8c7f70' }}
+              _hover={{ borderColor: 'brand.gray' }}
+              _focus={{ borderColor: 'brand.orange', boxShadow: '0 0 0 3px rgba(249,160,63,.2)' }}
+            />
+          </InputGroup>
+        </MotionBox>
       </Box>
 
-      <PageContainer maxW="800px">
-        <Text
-          fontFamily="mono" fontSize="10px" color="brand.gray"
-          textTransform="uppercase" letterSpacing="widest" mb={4}
-        >
-          ¿Por dónde querés empezar?
-        </Text>
+      <Box px={{ base: 4, md: 8, lg: 12 }} pt={7} pb={14}>
+        <Flex maxW="1300px" mx="auto" direction="column" gap={8}>
+          {loading ? (
+            <Flex justify="center" py={16}><Spinner color="brand.amber" size="lg" /></Flex>
+          ) : (
+            <>
+              <Flex wrap="wrap" gap={6} align="flex-start">
+                <WeekAgenda week={week} />
+                <SeasonRanking rows={rows} selected={picked} onSelect={setPicked} />
+              </Flex>
 
-        <SimpleGrid columns={{ base: 1, md: 2 }} spacing={{ base: 3, md: 5 }} backgroundColor="transparent" mb={6}>
-          <HomeShortcut
-            icon={FiUsers}
-            label="Jugadores"
-            description="Ficha, estadísticas y carga"
-            count={players.length}
-            onClick={() => navigate('/jugadores')}
-            delay={0.08}
-          />
-          <HomeShortcut
-            icon={FiBarChart2}
-            label="Estadísticas"
-            description="Comparar y exportar"
-            count={players.filter((p) => p.apiPlayerId).length}
-            onClick={() => navigate('/estadisticas')}
-            delay={0.12}
-          />
-          <HomeShortcut
-            icon={FiShield}
-            label="Clubes"
-            description="Cargar partido a todo el club"
-            count={clubCount}
-            onClick={() => navigate('/clubes')}
-            delay={0.16}
-          />
-          <HomeShortcut
-            icon={FiRefreshCw}
-            label="Sincronización"
-            description="API-Football e historial"
-            count={clubs.filter((c) => c.apiTeamId).length}
-            onClick={() => navigate('/sincronizacion')}
-            delay={0.2}
-          />
-        </SimpleGrid>
-      </PageContainer>
+              <AnimatePresence mode="wait">
+                {pickedRow && (
+                  <QuickProfile key={picked} ref={profileRef} row={pickedRow} onClose={() => setPicked(null)} />
+                )}
+              </AnimatePresence>
+
+              <Box as="section" aria-label="Jugadores">
+                <Flex wrap="wrap" align="center" justify="space-between" gap={3} mb={3.5}>
+                  <Text as="h2" fontFamily="heading" fontSize="32px" letterSpacing="0.02em" lineHeight={1}>
+                    Jugadores <Text as="span" color="brand.gray" fontSize="22px">{cards.length}</Text>
+                  </Text>
+                  <HStack spacing={1.5} wrap="wrap">
+                    {FILTERS.map((f) => {
+                      const on = f.id === filter
+                      return (
+                        <Box key={f.id} as="button" type="button" onClick={() => setFilter(f.id)} aria-pressed={on}
+                          px={3.5} minH="36px" borderRadius="full" border="1px solid"
+                          borderColor={on ? 'brand.amber' : 'brand.brownDark'} bg={on ? 'brand.amber' : 'transparent'}
+                          color={on ? 'brand.brown' : 'brand.gray'} _hover={{ color: on ? 'brand.brown' : 'white', borderColor: on ? 'brand.amber' : 'brand.gray' }}
+                          fontFamily="mono" fontSize="13px" letterSpacing="0.1em" textTransform="uppercase">
+                          {f.label}
+                        </Box>
+                      )
+                    })}
+                    <HStack as="label" spacing={2} ml={2} fontFamily="mono" fontSize="13px" letterSpacing="0.1em" textTransform="uppercase" color="brand.gray">
+                      <span>Ordenar</span>
+                      <Select size="sm" h="36px" w="170px" value={sort} onChange={(e) => setSort(e.target.value)}
+                        bg="#151312" borderColor="brand.brownDark" borderRadius="8px" color="white" fontFamily="mono" fontSize="14px">
+                        <option value="next" style={{ background: '#1E1B19' }}>Próximo partido</option>
+                        <option value="rating" style={{ background: '#1E1B19' }}>Rating</option>
+                        <option value="goles" style={{ background: '#1E1B19' }}>Goles</option>
+                        <option value="name" style={{ background: '#1E1B19' }}>Nombre</option>
+                      </Select>
+                    </HStack>
+                  </HStack>
+                </Flex>
+
+                {cards.length === 0 ? (
+                  <Box p={6} borderRadius="14px" border="1px dashed" borderColor="brand.brownDark" color="brand.gray" textAlign="center">
+                    Nadie coincide con esa búsqueda.
+                  </Box>
+                ) : (
+                  <SimpleGrid templateColumns={{ base: "repeat(2, minmax(0, 1fr))", md: "repeat(auto-fill, minmax(210px, 1fr))" }} spacing={{ base: 2.5, md: 3.5 }}>
+                    {cards.map((r, i) => (
+                      <ShowcaseCard key={r.player.slug} row={r} index={i} selected={picked === r.player.slug}
+                        onSelect={(slug) => setPicked(slug === picked ? null : slug)} />
+                    ))}
+                  </SimpleGrid>
+                )}
+              </Box>
+            </>
+          )}
+        </Flex>
+      </Box>
     </Box>
   )
 }

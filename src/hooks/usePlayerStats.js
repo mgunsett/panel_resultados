@@ -2,6 +2,7 @@ import { useEffect, useState, useCallback } from 'react'
 import { emptyPlayerStats, fetchPlayerStats } from '../lib/playerStats'
 import { players } from '../data/players'
 import { getClub } from '../data/clubs'
+import { fetchPlayerMatches } from '../lib/matches'
 
 // Estadísticas de un jugador. `reload` vuelve a leer (después de
 // completar el historial, por ejemplo).
@@ -49,4 +50,31 @@ export function useAllPlayersStats() {
   }, [])
 
   return { rows, loading, error }
+}
+
+// Todo lo que muestra el home: estadísticas y partidos (last/next) de
+// cada jugador. Una consulta a stats y dos lecturas de matches por
+// jugador, en paralelo. `refreshKey` fuerza otra lectura (después de
+// "Sincronizar ahora").
+export function useHomeData(refreshKey) {
+  const [rows, setRows] = useState([])
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    let cancelled = false
+    Promise.all(
+      players.map(async (player) => {
+        const [stats, matches] = await Promise.all([
+          fetchPlayerStats(player.slug).catch(() => emptyPlayerStats),
+          fetchPlayerMatches(player.slug).catch(() => ({ last: {}, next: {} })),
+        ])
+        return { player, club: getClub(player.clubId), stats, matches }
+      }),
+    )
+      .then((res) => { if (!cancelled) setRows(res) })
+      .finally(() => { if (!cancelled) setLoading(false) })
+    return () => { cancelled = true }
+  }, [refreshKey])
+
+  return { rows, loading }
 }

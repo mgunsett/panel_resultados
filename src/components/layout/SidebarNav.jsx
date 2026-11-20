@@ -7,7 +7,7 @@ import BrandLogo from '../ui/BrandLogo'
 
 // Un item queda activo también en sus rutas hijas: estando en
 // /jugador/luis_ramos el resaltado tiene que seguir en "Jugadores".
-const NAV_ITEMS = [
+export const NAV_ITEMS = [
   { to: '/', label: 'Inicio', icon: FiHome, exact: true },
   { to: '/jugadores', label: 'Jugadores', icon: FiUsers, extraPaths: ['/jugador'] },
   { to: '/estadisticas', label: 'Estadísticas', icon: FiBarChart2 },
@@ -15,7 +15,7 @@ const NAV_ITEMS = [
   { to: '/sincronizacion', label: 'Sincronización', icon: FiRefreshCw },
 ]
 
-function isItemActive(item, pathname) {
+export function isItemActive(item, pathname) {
   if (item.exact) return pathname === item.to
   if (pathname === item.to || pathname.startsWith(`${item.to}/`)) return true
   return (item.extraPaths || []).some((p) => pathname.startsWith(`${p}/`))

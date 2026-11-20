@@ -39,7 +39,7 @@ VITE_FIREBASE_APP_ID=
 
 | Ruta | Qué hace |
 | --- | --- |
-| `/` | Home con la portada de LED Sports y los accesos |
+| `/` | Home "Vitrina de jugadores": buscador, partidos de la semana, ranking de la temporada, ficha rápida y grilla de jugadores con el estado de cada landing |
 | `/jugadores` | Grilla de jugadores |
 | `/jugador/:slug` | Ficha del jugador en pestañas: Resumen, Partidos, Temporadas y Carga manual (`?tab=carga`) |
 | `/estadisticas` | Todos los jugadores en una tabla: temporada, cada 90', último partido y todos los partidos. Filtro por club y temporada, orden por columna, exporta CSV y Excel |
@@ -58,6 +58,12 @@ Antes de guardar pide confirmación listando a quiénes va a pisar. Si los
 jugadores de un club no tienen el mismo partido cargado (porque alguien editó a
 uno por separado), el editor lo avisa, muestra el más reciente y al guardar los
 vuelve a emparejar.
+
+### Navegación, login y pantalla de carga
+
+- Barra superior con las secciones y **Sincronizar ahora** (sincroniza club por club, igual que `/sincronizacion`). En el celular, las secciones salen en un menú lateral.
+- `/login` usa `src/assets/fondo_led.webp` a la izquierda (arriba en el celular).
+- Pantalla de carga (`src/components/ui/Splash.jsx`): se muestra al abrir el panel (una vez por pestaña) y después de iniciar sesión, con un mínimo de 2,3 s. Usa `fondo_led.webp` en desktop y `fondo_led2.webp` en el celular.
 
 ## Sumar un jugador
 
