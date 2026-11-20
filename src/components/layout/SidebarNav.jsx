@@ -3,6 +3,7 @@ import { FiHome, FiUsers, FiShield, FiLogOut, FiRefreshCw, FiBarChart2 } from 'r
 import { useLocation, useNavigate } from 'react-router-dom'
 import { useAuth } from '../../lib/auth'
 import { players, getClubsWithPlayers } from '../../data/players'
+import { useRoster } from '../../lib/rosterStore'
 import BrandLogo from '../ui/BrandLogo'
 
 // Un item queda activo también en sus rutas hijas: estando en
@@ -65,6 +66,7 @@ export default function SidebarNav({ onNavigate }) {
   const { user, logout } = useAuth()
   const { pathname } = useLocation()
   const navigate = useNavigate()
+  useRoster() // re-render cuando se suma un jugador desde el alta
 
   const counts = { '/jugadores': players.length, '/clubes': getClubsWithPlayers().length }
 

@@ -1,8 +1,7 @@
-import { clubs } from '../../src/data/clubs.js'
-import { players } from '../../src/data/players.js'
 import { createApiFootballClient } from '../lib/apiFootball.js'
 import { adminDb } from '../lib/firebaseAdmin.js'
 import { runSync } from '../lib/sync.js'
+import { loadRoster } from '../lib/roster.js'
 import { isScheduledRun } from '../../src/lib/syncSchedule.js'
 
 // ─── SINCRONIZACIÓN PROGRAMADA ───────────────────────────────────
@@ -27,8 +26,10 @@ export default async () => {
     return
   }
 
+  const db = adminDb()
+  const { clubs, players } = await loadRoster(db)
   const report = await runSync({
-    db: adminDb(),
+    db,
     api: createApiFootballClient(),
     clubs,
     players,

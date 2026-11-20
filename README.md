@@ -65,10 +65,50 @@ vuelve a emparejar.
 - `/login` usa `src/assets/fondo_led.webp` a la izquierda (arriba en el celular).
 - Pantalla de carga (`src/components/ui/Splash.jsx`): se muestra al abrir el panel (una vez por pestaña) y después de iniciar sesión, con un mínimo de 2,3 s. Usa `fondo_led.webp` en desktop y `fondo_led2.webp` en el celular.
 
-## Sumar un jugador
+## Alta de jugadores
 
-Editá [`src/data/players.js`](src/data/players.js) a mano y dejá la foto en
-`public/players/`. No hay UI para esto y no sale de Firestore.
+En **Jugadores → Nuevo jugador** (`/jugadores/nuevo`) hay un asistente de 5
+pasos: buscar al jugador en API-Football (por apellido o por ID), importar sus
+datos (lo que la API no trae se completa a mano), foto y escudo, links de
+landing y Drive, slug, y usuario y contraseña.
+
+Dónde queda cada cosa:
+
+- **Ficha**: en `players/{slug}` de Firestore, con `panel: true`. El panel y
+  las funciones la suman a lo de `src/data/players.js`. Si el club no existía,
+  viaja dentro de la ficha (`panelClub`) y aparece como un club más.
+- **Foto y escudo subido a mano**: en Storage, `players/{slug}/shields/`
+  (`_foto.webp` y el escudo con el nombre del equipo), la única ruta que hoy
+  permiten las reglas.
+- **Cuenta**: en Firebase Authentication, creada por la función
+  `create-player` con el Admin SDK. Lleva los claims `role: 'player'` y
+  `slug`. En Firestore sólo queda `playerAccounts/{slug}` con el uid y el
+  email; la contraseña no se guarda en ningún lado y se muestra una sola vez.
+  Las cuentas de jugador no pueden entrar al panel ni usar sus funciones.
+
+### Antes de activar las cuentas
+
+Las reglas actuales dejan escribir a **cualquier** usuario logueado. Una
+cuenta de jugador podría editar los partidos de todos. Por eso la función no
+crea cuentas hasta que `PLAYER_ACCOUNTS_ENABLED=true` (sin eso, el alta anda
+igual destildando "Crear la cuenta del jugador ahora"). Antes de activarlo,
+cambiá en `firestore.rules` y `storage.rules` de las landings el
+`request.auth != null` de escritura por algo como:
+
+```
+function isAdmin() { return request.auth != null && request.auth.token.role != 'player'; }
+function isOwner(slug) { return request.auth != null && request.auth.token.role == 'player' && request.auth.token.slug == slug; }
+// players/{slug} y stats: allow write: if isAdmin();
+// players/{slug}/matches/{id}: allow write: if isAdmin() || isOwner(slug);
+```
+
+y desplegalas. `PLAYER_LOGIN_DOMAIN` (servidor) y `VITE_PLAYER_LOGIN_DOMAIN`
+(panel) son el dominio que se agrega al usuario para armar el email de login.
+
+## Sumar un jugador a mano
+
+También se puede seguir editando [`src/data/players.js`](src/data/players.js) a
+mano y dejando la foto en `public/players/`.
 
 El `slug` **debe coincidir con el `VITE_PLAYER_SLUG` de la landing individual**,
 que no siempre es igual al nombre de la carpeta del repo (ej: la carpeta

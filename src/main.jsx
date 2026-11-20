@@ -5,6 +5,7 @@ import { ChakraProvider } from '@chakra-ui/react'
 import theme from './theme'
 import App from './App'
 import { AuthProvider } from './lib/auth'
+import { RosterProvider } from './lib/rosterStore'
 import { SplashProvider } from './components/ui/Splash'
 
 ReactDOM.createRoot(document.getElementById('root')).render(
@@ -12,9 +13,11 @@ ReactDOM.createRoot(document.getElementById('root')).render(
     <BrowserRouter>
       <ChakraProvider theme={theme}>
         <AuthProvider>
-          <SplashProvider>
-            <App />
-          </SplashProvider>
+          <RosterProvider>
+            <SplashProvider>
+              <App />
+            </SplashProvider>
+          </RosterProvider>
         </AuthProvider>
       </ChakraProvider>
     </BrowserRouter>
