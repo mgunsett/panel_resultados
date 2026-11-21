@@ -1,7 +1,7 @@
 import {
   clubTimezone, pickLastFinished, pickNext, fixtureToMatchPayload,
   matchContentChanged, playerStatsFromFixture,
-  currentSeason, seasonStatsFromPlayer, seasonContentChanged,
+  currentSeason, seasonStatsFromPlayer, seasonContentChanged, SEASON_SCHEMA,
   fixtureSeason, historyDocId, historyEntryFromStats,
 } from './mappers.js'
 
@@ -145,6 +145,7 @@ async function syncClub({ db, api, club, clubPlayers, dryRun, now }) {
       }
       const stale = !current
         || current.temporada !== season
+        || current.esquema !== SEASON_SCHEMA
         || !current.updated_at
         || Date.parse(now) - Date.parse(current.updated_at) >= SEASON_REFRESH_MS
       if (!newMatch && !stale) continue

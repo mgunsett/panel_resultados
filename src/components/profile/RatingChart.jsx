@@ -1,6 +1,8 @@
 import { useState } from 'react'
 import { Box, Flex, Text } from '@chakra-ui/react'
+import { FiTrendingUp } from 'react-icons/fi'
 import { num, rivalLabel, shortDate } from '../../lib/profileData'
+import { EmptyState } from './ProfileCards'
 
 const Y0 = 5.5
 const Y1 = 9.5
@@ -11,13 +13,33 @@ const yPct = (r) => ((Y1 - clamp(r)) / (Y1 - Y0)) * 100
 // Línea con los últimos `max` partidos jugados y el promedio de la
 // temporada punteado. Cada punto se puede enfocar o pasar el mouse
 // para ver el partido.
-export default function RatingChart({ matches, max = 12 }) {
+//
+// Si hay menos de 2 partidos con rating explica por qué: casi siempre
+// es que el historial del año no se completó (la sincronización sólo
+// guarda los partidos nuevos). `expected` son los partidos que la API
+// cuenta en la temporada y `action` el botón para completarlo.
+export default function RatingChart({ matches, max = 12, expected, action }) {
   const rated = matches.filter((m) => m.jugo && num(m.rating) !== null)
   const list = rated.slice(-max)
   const [hover, setHover] = useState(null)
 
   if (list.length < 2) {
-    return <Text fontSize="15px" color="brand.gray">Hacen falta al menos 2 partidos con rating para armar el gráfico.</Text>
+    const saved = matches.length
+    const played = matches.filter((m) => m.jugo).length
+    const gap = num(expected) !== null && expected > played
+    return (
+      <EmptyState
+        icon={FiTrendingUp}
+        title={gap ? `Faltan partidos en el historial (${saved} guardado${saved === 1 ? '' : 's'} de ${expected} jugados)` : 'Todavía no hay suficientes partidos con rating'}
+        action={gap ? action : null}
+      >
+        {gap
+          ? 'Los totales vienen de la API, pero el detalle partido a partido sólo tiene los que se sincronizaron desde que se cargó el jugador. Completá el historial del año para ver el gráfico.'
+          : played
+            ? `Jugó ${played} partido${played === 1 ? '' : 's'}${rated.length ? ` y sólo ${rated.length} tiene rating` : ' y la API no le asignó rating'}. El gráfico aparece desde el segundo partido con rating.`
+            : 'Cuando sume minutos con rating en al menos dos partidos, acá se ve su evolución.'}
+      </EmptyState>
+    )
   }
 
   const avg = rated.reduce((a, m) => a + Number(m.rating), 0) / rated.length
