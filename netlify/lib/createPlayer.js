@@ -1,7 +1,5 @@
-import {
-  checkSlug, loginEmail, slugify, DEFAULT_LOGIN_DOMAIN, USERNAME_RE,
-  PLAYERS, PLAYER_ACCOUNTS, PROFILE_KEYS,
-} from '../../src/lib/roster.js'
+import { checkSlug, slugify, PLAYERS, PLAYER_ACCOUNTS, PROFILE_KEYS } from '../../src/lib/roster.js'
+import { ensureAccount } from './playerAccounts.js'
 
 // ─── ALTA DE JUGADOR (servidor) ──────────────────────────────────
 // Lo llama la función create-player con lo que se cargó en el asistente
@@ -10,7 +8,9 @@ import {
 //      pidió). La contraseña viaja sólo en este pedido: no se guarda en
 //      ningún lado. La cuenta lleva los claims role: 'player' y slug:
 //      en el panel sólo ve su propia ficha, en modo lectura (ver
-//      netlify/lib/roles.js y firebase/firestore.rules).
+//      netlify/lib/roles.js y firebase/firestore.rules). Lo hace
+//      ensureAccount() de netlify/lib/playerAccounts.js, que también usa
+//      "Acceso al panel" para los jugadores que ya estaban cargados.
 //   2. Guarda la ficha en players/{slug} (con panel: true y, si el club
 //      no existía, el club en `panelClub`).
 //   3. Guarda la cuenta (uid y email, nunca la contraseña) en
@@ -105,29 +105,7 @@ export async function createPlayer({ db, auth, roster, payload, env = process.en
 
   // ── 1. Cuenta en Firebase Authentication ──
   let account = null
-  if (p.account) {
-    if (env.PLAYER_ACCOUNTS_ENABLED !== 'true') {
-      fail(403, 'La creación de cuentas de jugador está apagada. Activá PLAYER_ACCOUNTS_ENABLED=true en Netlify después de actualizar las reglas de Firestore (ver README).')
-    }
-    const username = String(p.account.username || '').trim().toLowerCase()
-    const email = loginEmail(username, env.PLAYER_LOGIN_DOMAIN || DEFAULT_LOGIN_DOMAIN)
-    if (!username.includes('@') && !USERNAME_RE.test(username)) fail(400, 'El usuario tiene que tener entre 3 y 40 caracteres: letras, números, punto, guion o guion bajo.')
-    if (username.includes('@') && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(username)) fail(400, 'El email no es válido.')
-    const password = String(p.account.password || '')
-    if (password.length < 10) fail(400, 'La contraseña tiene que tener al menos 10 caracteres.')
-
-    let user = await auth.getUserByEmail(email).catch((e) => (e?.code === 'auth/user-not-found' ? null : Promise.reject(e)))
-    if (user) {
-      // Reintento después de un fallo en Firestore: la cuenta es de este
-      // mismo jugador, así que se reusa (y se le pone la contraseña nueva).
-      if (user.customClaims?.role !== 'player' || user.customClaims?.slug !== slug) fail(409, `El usuario ${email} ya está en uso.`)
-      await auth.updateUser(user.uid, { password, displayName: name })
-    } else {
-      user = await auth.createUser({ email, password, displayName: name })
-    }
-    await auth.setCustomUserClaims(user.uid, { role: 'player', slug })
-    account = { uid: user.uid, email, mustChangePassword: Boolean(p.account.mustChange), createdAt: now, createdBy: adminUid }
-  }
+  if (p.account) account = await ensureAccount({ auth, slug, name, account: p.account, env, now, adminUid })
   player.hasAccount = Boolean(account)
 
   // ── 2 y 3. Ficha y cuenta, juntas ──
