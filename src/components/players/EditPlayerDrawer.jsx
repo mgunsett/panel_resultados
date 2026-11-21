@@ -12,13 +12,15 @@ import {
 } from '../../lib/playerEdit'
 import { fetchApiProfile, positionEs, toWebp, uploadPlayerPhoto, uploadClubCrest, MAX_IMAGE_MB } from '../../lib/newPlayer'
 import ClubCrest from '../clubs/ClubCrest'
+import PlayerAccess from './PlayerAccess'
 import { Notice, Pill, Dropzone, Code, priBtn, ghostBtn, smBtn, fieldStyle, monoField, lbl } from '../newPlayer/ui'
 
 // ─── EDITAR JUGADOR ──────────────────────────────────────────────
 // Panel lateral que abre el lápiz del banner (junto al nombre o en la
 // esquina de Landing / Fotos). Edita todo lo de la ficha menos el slug.
 // `focus` = 'landingUrl' | 'driveUrl' para entrar directo a ese link.
-// Cómo se guarda cada caso: src/lib/playerEdit.js.
+// Cómo se guarda cada caso: src/lib/playerEdit.js. La sección "Acceso
+// al panel" (usuario y contraseña) va aparte: PlayerAccess.jsx.
 
 function Section({ title, children, right }) {
   return (
@@ -285,6 +287,10 @@ export default function EditPlayerDrawer({ player, isOpen, onClose, focus }) {
               <Flex wrap="wrap" gap={2} align="center"><Code>players/{player.slug}</Code><Code>VITE_PLAYER_SLUG={player.slug}</Code></Flex>
               <Text fontSize="13px" color="#8c7f70">No se edita: es la ruta de sus partidos en Firestore y la variable de su landing. Cambiarlo dejaría la landing sin datos.</Text>
             </Flex>
+          </Section>
+
+          <Section title="Acceso al panel">
+            <PlayerAccess player={player} isOpen={isOpen} />
           </Section>
         </DrawerBody>
 

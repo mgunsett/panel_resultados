@@ -87,6 +87,23 @@ Dónde queda cada cosa:
   Con esa cuenta el jugador entra al panel y sólo ve su propia ficha (ver
   "Acceso por rol").
 
+### Jugadores que ya estaban cargados
+
+Los de `src/data/players.js` y los que se dieron de alta sin cuenta se
+manejan desde **Editar jugador** (el lápiz junto al nombre, sólo admin),
+sección **Acceso al panel**:
+
+- **Crear acceso**: elegís el usuario (por defecto el slug), se genera la
+  contraseña y se crea la cuenta con los mismos claims y el mismo
+  `playerAccounts/{slug}` que en el alta. Si el jugador ya tiene cuenta no
+  deja crear otra.
+- **Restablecer contraseña**: le pone una contraseña nueva a la cuenta que ya
+  tiene (la vieja deja de andar y se cierran sus sesiones).
+
+La contraseña se muestra una sola vez. Las dos acciones van por la misma
+función `create-player` (`action: account-create | account-reset`, ver
+`netlify/lib/playerAccounts.js`).
+
 ### Antes de activar las cuentas
 
 Las reglas desplegadas hoy dejan escribir a **cualquier** usuario logueado:

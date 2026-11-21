@@ -53,7 +53,15 @@ export const uploadPlayerPhoto = (slug, blob) => upload(`players/${slug}/shields
 export const uploadClubCrest = (slug, clubName, blob) =>
   upload(`players/${slug}/shields/${normalizeTeamName(clubName)}.${blob.type === 'image/svg+xml' ? 'svg' : 'webp'}`, blob)
 
-export async function createPlayerRequest(payload) {
+export const createPlayerRequest = (payload) => callCreatePlayer(payload)
+
+// Usuario y contraseña de un jugador que ya está cargado (ver
+// netlify/lib/playerAccounts.js). Sólo para admins.
+export const accountStatus = (slug) => callCreatePlayer({ action: 'account-status', slug })
+export const createAccount = (slug, account) => callCreatePlayer({ action: 'account-create', slug, account })
+export const resetAccountPassword = (slug, password) => callCreatePlayer({ action: 'account-reset', slug, password })
+
+async function callCreatePlayer(payload) {
   const user = auth?.currentUser
   if (!user) throw new Error('No hay sesión iniciada.')
   const res = await fetch('/.netlify/functions/create-player', {
