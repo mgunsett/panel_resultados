@@ -109,3 +109,68 @@ export function per90(value, minutes) {
   const m = num(minutes)
   return v !== null && m ? (v / m) * 90 : null
 }
+
+// ─── COMPLETAR LO QUE FALTA ──────────────────────────────────────
+// El historial (stats/history_{año}) sólo tiene los partidos que se
+// guardaron desde que corre la sincronización, más los que trajo
+// «Completar historial». stats/last y stats/prev se escriben en la
+// misma pasada, pero si el historial no existía todavía quedan sólo
+// ahí: los sumamos para que el gráfico y los totales no queden vacíos.
+export function seasonFeed(stats, year) {
+  const list = seasonMatches(stats, year)
+  const known = new Set(Object.values(stats?.history || {}).flat().map((m) => String(m.fixtureId)))
+  ;[stats?.prev, stats?.last].forEach((m) => {
+    if (!m?.fixtureId || known.has(String(m.fixtureId))) return
+    if (String(m.fecha).slice(0, 4) !== String(year)) return
+    known.add(String(m.fixtureId))
+    list.push(m)
+  })
+  return list.sort((a, b) => String(a.fecha).localeCompare(String(b.fecha)))
+}
+
+// Último partido en el que sumó minutos (stats/last puede ser uno en
+// el que no jugó).
+export function latestPlayed(stats) {
+  const all = [...Object.values(stats?.history || {}).flat(), stats?.last, stats?.prev].filter((m) => m?.jugo)
+  return all.sort((a, b) => String(b.fecha).localeCompare(String(a.fecha)))[0] || null
+}
+
+// Último partido para el panel: stats/last o, si no está, el más nuevo
+// del historial.
+export function lastMatchOf(stats) {
+  if (stats?.last) return stats.last
+  const all = Object.values(stats?.history || {}).flat()
+  return all.sort((a, b) => String(b.fecha).localeCompare(String(a.fecha)))[0] || null
+}
+
+const SUMMABLE = [
+  'goles', 'asistencias', 'tiros', 'tirosArco', 'regates', 'regatesInt', 'pases', 'pasesClave',
+  'quites', 'intercepciones', 'duelos', 'duelosG', 'faltasR', 'faltasC', 'amarillas', 'rojas', 'minutos',
+]
+
+// Totales de la temporada con lo que falte completado desde los
+// partidos guardados. `derived` dice qué campos se calcularon así y con
+// cuántos partidos, para avisarlo en la ficha (no se hace pasar una
+// suma parcial por el total de la API).
+export function fillSeason(season, matches) {
+  const played = (matches || []).filter((m) => m.jugo)
+  const totals = { ...(season || {}) }
+  const derived = {}
+  if (!played.length) return { totals: season || null, derived, played: 0 }
+  SUMMABLE.forEach((k) => {
+    if (num(totals[k]) !== null) return
+    const withValue = played.filter((m) => num(m[k]) !== null)
+    if (!withValue.length) return
+    totals[k] = withValue.reduce((a, m) => a + num(m[k]), 0)
+    // Minutos de esos mismos partidos, para que el c/90' no mezcle una
+    // suma parcial con los minutos de toda la temporada.
+    derived[k] = { n: withValue.length, minutos: withValue.reduce((a, m) => a + (num(m.minutos) || 0), 0) }
+  })
+  if (num(totals.precisionPases) === null) {
+    const ok = played.reduce((a, m) => a + (num(m.pasesOk) || 0), 0)
+    const tot = played.reduce((a, m) => a + (num(m.pasesOk) !== null ? num(m.pases) || 0 : 0), 0)
+    if (tot) { totals.precisionPases = (ok / tot) * 100; derived.precisionPases = { n: played.length } }
+  }
+  if (num(totals.partidos) === null) { totals.partidos = played.length; derived.partidos = { n: played.length } }
+  return { totals, derived, played: played.length }
+}

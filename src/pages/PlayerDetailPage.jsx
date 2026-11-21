@@ -1,7 +1,9 @@
 import {
-  Box, Flex, Text, Button, Code, Image, Select, Spinner, Tabs, TabList, Tab, TabPanels, TabPanel,
+  Box, Flex, Text, Button, Code, Image, Select, Spinner, Tabs, TabList, Tab, TabPanels, TabPanel, useToast,
 } from '@chakra-ui/react'
-import { FiArrowLeft, FiEdit3, FiShield, FiBarChart2, FiKey } from 'react-icons/fi'
+import { FiArrowLeft, FiEdit3, FiShield, FiBarChart2, FiKey, FiDatabase } from 'react-icons/fi'
+import { callApiFootball } from '../lib/apiFootball'
+import { useState } from 'react'
 import { useNavigate, useParams, useSearchParams, Link as RouterLink } from 'react-router-dom'
 import { motion, useReducedMotion } from 'framer-motion'
 import { getPlayer, players, playerInitials } from '../data/players'
@@ -11,7 +13,7 @@ import { usePlayerStats } from '../hooks/usePlayerStats'
 import { playerStatus, nextMatchLabel } from '../lib/homeData'
 import { SEASON_COLUMNS, PER90_COLUMNS, MATCH_COLUMNS } from '../lib/statsSchema'
 import { exportFileName } from '../lib/exporters'
-import { currentYear, dash, deltaVs, fmtInt, seasonMatches } from '../lib/profileData'
+import { currentYear, dash, deltaVs, fillSeason, fmtInt, lastMatchOf, latestPlayed, seasonFeed, seasonMatches } from '../lib/profileData'
 import NotFoundNotice from '../components/ui/NotFoundNotice'
 import ClubCrest from '../components/clubs/ClubCrest'
 import PlayerLinks from '../components/players/PlayerLinks'
@@ -46,6 +48,38 @@ const tabStyle = {
 }
 
 const btn = { h: '44px', fontFamily: 'mono', fontSize: '14px', letterSpacing: '0.12em', textTransform: 'uppercase', borderRadius: '8px' }
+
+// Trae de API-Football los partidos del año que le falten al club del
+// jugador (misma acción que «Completar historial» en Sincronización,
+// pero sólo para este club). Va en tandas cortas hasta que no quede
+// ninguno y después vuelve a leer la ficha.
+function CompleteHistoryButton({ club, season, onDone }) {
+  const toast = useToast()
+  const [state, setState] = useState(null)
+  if (!club?.apiTeamId) return null
+  const run = async () => {
+    setState('Pidiendo partidos…')
+    try {
+      for (let round = 0; round < 25; round++) {
+        const res = await callApiFootball('history', { club: club.id, season }, { method: 'POST' })
+        setState(`${res.total - res.remaining} de ${res.total} partidos`)
+        if (!res.remaining) break
+      }
+      toast({ title: 'Historial completo', status: 'success', duration: 4000 })
+      onDone?.()
+    } catch (err) {
+      toast({ title: 'No se pudo completar', description: err.message, status: 'error', duration: 6000 })
+    } finally {
+      setState(null)
+    }
+  }
+  return (
+    <Button size="sm" mt={1} leftIcon={<FiDatabase />} bg="brand.orange" color="brand.brown" _hover={{ bg: '#ffb35e' }}
+      fontFamily="mono" letterSpacing="0.12em" textTransform="uppercase" isLoading={Boolean(state)} loadingText={state || undefined} onClick={run}>
+      Completar historial {season}
+    </Button>
+  )
+}
 
 function NoStats({ player, onSync, readOnly }) {
   if (readOnly) {
@@ -94,7 +128,7 @@ export default function PlayerDetailPage() {
   // Los hooks van siempre (no pueden ir después de un return); con un
   // slug inexistente la lectura falla sin efecto sobre la vista.
   const controller = usePlayerMatches(slug)
-  const { stats, loading: statsLoading } = usePlayerStats(slug)
+  const { stats, loading: statsLoading, reload: reloadStats } = usePlayerStats(slug)
   const [params, setParams] = useSearchParams()
   const edit = useEditPlayer(player)
   const { isPlayer: readOnly } = useAuth()
@@ -119,7 +153,11 @@ export default function PlayerDetailPage() {
   const status = playerStatus(player, club, controller.matches)
   const nextLabel = nextMatchLabel(controller.matches?.next, club)
   const year = currentYear(stats)
-  const season = stats.seasons[year] || stats.season
+  const apiSeason = stats.seasons[year] || stats.season
+  const feed = seasonFeed(stats, year)
+  // Lo que los totales de la API no traen se completa con los partidos
+  // guardados (marcado en la ficha).
+  const { totals: season, derived } = fillSeason(apiSeason, feed)
   const prev = stats.seasons[year - 1]
   const hasStats = Boolean(player.apiPlayerId)
   const tabIndex = Math.max(0, tabs.findIndex((t) => t.id === params.get('tab')))
@@ -271,11 +309,14 @@ export default function PlayerDetailPage() {
                   <Flex direction="column" gap={5}>
                     <Flex wrap="wrap" gap={5}>
                       <Card title="Rating partido a partido" flex="999 1 560px">
-                        <RatingChart matches={seasonMatches(stats, year)} />
+                        <RatingChart matches={feed} expected={apiSeason?.partidos}
+                          action={!readOnly && <CompleteHistoryButton club={club} season={year} onDone={reloadStats} />} />
                       </Card>
-                      <Box flex="1 1 340px" minW={0} display="flex"><LastMatchPanel match={stats.last} /></Box>
+                      <Box flex="1 1 360px" minW={0} display="flex">
+                        <LastMatchPanel match={lastMatchOf(stats)} club={club} lastPlayed={latestPlayed(stats)} />
+                      </Box>
                     </Flex>
-                    <StatAreas season={season} />
+                    <StatAreas season={season} derived={derived} expected={apiSeason?.partidos} />
                     <CompetitionList season={season} />
                   </Flex>
                 )}

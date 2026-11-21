@@ -97,6 +97,12 @@ export function matchContentChanged(current, next) {
   return MATCH_CONTENT_FIELDS.some((f) => (current[f] ?? null) !== (next[f] ?? null))
 }
 
+// Escudo de un equipo por su ID cuando la respuesta no trae `logo`
+// (pasa en algunos partidos de copa). Es el mismo CDN que usa la API.
+export function teamLogoUrl(teamId) {
+  return teamId ? `https://media.api-sports.io/football/teams/${teamId}.png` : null
+}
+
 // Posiciones de la API → las que usa la ficha de LED Sports.
 const POSITIONS = { G: 'ARQ', D: 'DEF', M: 'MED', F: 'DEL' }
 
@@ -121,7 +127,8 @@ export function playerStatsFromFixture(fx, fixturePlayers, club, apiPlayerId, no
     fecha: String(fx.fixture.date || '').slice(0, 10),
     competicion: fx.league?.name || '',
     rival: rival?.name || '',
-    rivalLogo: rival?.logo || null,
+    rivalId: rival?.id ?? null,
+    rivalLogo: rival?.logo || teamLogoUrl(rival?.id),
     condicion: isHome ? 'L' : 'V',
     gf: num(gf),
     gc: num(gc),
@@ -185,6 +192,11 @@ export function currentSeason(now = new Date().toISOString()) {
   return Number(String(now).slice(0, 4))
 }
 
+// Versión de los campos de stats/season. Al sumar campos nuevos (v2:
+// faltas) se sube, y la próxima sincronización vuelve a pedir los
+// totales de todos aunque se hayan actualizado hace menos de un día.
+export const SEASON_SCHEMA = 2
+
 const SEASON_POSITIONS = { Goalkeeper: 'ARQ', Defender: 'DEF', Midfielder: 'MED', Attacker: 'DEL' }
 
 // Suma un campo en todas las competencias. Si ninguna lo trae, null
@@ -242,8 +254,13 @@ export function seasonStatsFromPlayer(playerResponse, season, now = new Date().t
     duelosG: sumField(list, (s) => s.duels?.won),
     regates: sumField(list, (s) => s.dribbles?.success),
     regatesInt: sumField(list, (s) => s.dribbles?.attempts),
+    // Faltas: la API las trae en los totales igual que en cada partido,
+    // pero antes no se guardaban y la ficha mostraba "—".
+    faltasR: sumField(list, (s) => s.fouls?.drawn),
+    faltasC: sumField(list, (s) => s.fouls?.committed),
     amarillas: sumField(list, (s) => s.cards?.yellow),
     rojas: sumField(list, (s) => (num(s.cards?.red) || 0) + (num(s.cards?.yellowred) || 0)),
+    esquema: SEASON_SCHEMA,
     competiciones: list.map((s) => ({
       nombre: s.league?.name || '',
       logo: s.league?.logo || null,
