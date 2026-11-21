@@ -1,0 +1,30 @@
+rules_version = '2';
+
+// ─── REGLAS DE STORAGE CON ROLES ────────────────────────────────────
+// Listas para desplegar, TODAVÍA NO DESPLEGADAS. Reemplazan a las de
+// storage.rules de cada landing. Ver firebase/README.md.
+// Lectura pública como hoy (escudos y fotos que muestran las landings);
+// escribir, sólo admins.
+
+service firebase.storage {
+  match /b/{bucket}/o {
+
+    function isAdmin() {
+      return request.auth != null
+        && request.auth.token.get('role', '') == 'admin'
+        && firestore.exists(/databases/(default)/documents/panelAdmins/$(request.auth.token.email.lower()));
+    }
+
+    // Legacy (landing original de cainfara): shields/{archivo}
+    match /shields/{fileName} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
+    // players/{slug}/shields/{archivo} (escudos y _foto.webp del alta)
+    match /players/{slug}/shields/{fileName} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+  }
+}

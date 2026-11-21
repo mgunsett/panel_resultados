@@ -1,5 +1,5 @@
 import { createContext, useCallback, useContext, useEffect, useState } from 'react'
-import { collection, getDocs, query, where } from 'firebase/firestore'
+import { collection, doc, getDoc, getDocs, query, where } from 'firebase/firestore'
 import { db } from './firebase'
 import { useAuth } from './auth'
 import { players } from '../data/players'
@@ -15,6 +15,8 @@ import { mergeRoster, PLAYERS } from './roster'
 // Protected en App.jsx). Si Firestore falla, sigue con los archivos.
 // También aplica los cambios hechos con "Editar jugador" a los de
 // players.js (panelEdit en su doc, ver roster.js).
+// Una cuenta de jugador sólo lee su propio doc: las reglas no le dejan
+// listar a los demás (ver firebase/firestore.rules).
 
 const RosterContext = createContext({ ready: false, version: 0, error: null, refresh: async () => {} })
 
@@ -38,11 +40,18 @@ function applyRoster(extraPlayers, edits) {
 }
 
 export function RosterProvider({ children }) {
-  const { user } = useAuth()
+  const { user, isPlayer, playerSlug, loading } = useAuth()
   const [state, setState] = useState({ ready: false, version: 0, error: null })
 
   const refresh = useCallback(async () => {
     try {
+      if (isPlayer) {
+        const snap = await getDoc(doc(db, PLAYERS, playerSlug))
+        const own = snap.exists() ? [{ ...snap.data(), slug: snap.id }] : []
+        applyRoster(own.filter((d) => d.panel), own.filter((d) => d.panelEdited))
+        setState((s) => ({ ready: true, version: s.version + 1, error: null }))
+        return
+      }
       const [ps, es] = await Promise.all([
         getDocs(query(collection(db, PLAYERS), where('panel', '==', true))),
         getDocs(query(collection(db, PLAYERS), where('panelEdited', '==', true))),
@@ -54,11 +63,14 @@ export function RosterProvider({ children }) {
       console.error('No se pudieron leer los jugadores dados de alta en el panel:', err)
       setState((s) => ({ ...s, ready: true, error: err }))
     }
-  }, [])
+  }, [isPlayer, playerSlug])
 
   useEffect(() => {
-    if (user && db) refresh()
-  }, [user, refresh])
+    if (!user || !db || loading) return
+    // Otra cuenta (ej.: de admin a jugador): no mostrar el plantel viejo.
+    setState((s) => ({ ...s, ready: false }))
+    refresh()
+  }, [user, loading, refresh])
 
   return <RosterContext.Provider value={{ ...state, refresh }}>{children}</RosterContext.Provider>
 }

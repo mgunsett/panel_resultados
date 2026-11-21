@@ -42,8 +42,11 @@ function SyncStatus() {
 export default function TopNav({ onOpenMenu }) {
   const { pathname } = useLocation()
   const navigate = useNavigate()
-  const { user, logout } = useAuth()
+  const { user, logout, isPlayer } = useAuth()
   const { running, runSync } = useSyncAll()
+  // Cuenta de jugador: sólo la marca y la cuenta. Sin secciones ni
+  // sincronización (tampoco podría usarlas: las funciones las rechazan).
+  const full = !isPlayer
 
   return (
     <Flex
@@ -53,17 +56,17 @@ export default function TopNav({ onOpenMenu }) {
       bg="rgba(13,12,11,0.88)" backdropFilter="blur(12px)"
       borderBottom="1px solid" borderColor="#2e2825"
     >
-      <IconButton
+      {full && <IconButton
         display={{ base: 'inline-flex', lg: 'none' }}
         icon={<FiMenu size={20} />} aria-label="Abrir menú" variant="ghost"
         color="brand.gray" _hover={{ color: 'white', bg: 'brand.brownLight' }} onClick={onOpenMenu}
-      />
+      />}
       <Box as="button" type="button" onClick={() => navigate('/')} mr={{ base: 0, lg: 4 }} flexShrink={0}
         _focusVisible={{ outline: '2px solid', outlineColor: 'brand.orange', outlineOffset: '4px' }}>
         <BrandLogo height="28px" fontSize="2xl" />
       </Box>
 
-      <HStack as="nav" aria-label="Secciones" spacing={1} display={{ base: 'none', lg: 'flex' }}>
+      {full && <HStack as="nav" aria-label="Secciones" spacing={1} display={{ base: 'none', lg: 'flex' }}>
         {NAV_ITEMS.map((item) => {
           const active = isItemActive(item, pathname)
           return (
@@ -79,12 +82,12 @@ export default function TopNav({ onOpenMenu }) {
             </Button>
           )
         })}
-      </HStack>
+      </HStack>}
 
       <Box flex={1} />
 
-      <SyncStatus />
-      <Button
+      {full && <SyncStatus />}
+      {full && <Button
           aria-label="Sincronizar ahora"
           onClick={runSync} isLoading={running} loadingText="Sincronizando"
           leftIcon={<FiRefreshCw size={16} />} h="44px" px={{ base: 3, md: 4 }} flexShrink={0}
@@ -94,7 +97,7 @@ export default function TopNav({ onOpenMenu }) {
           sx={{ '@media (max-width: 47.99em)': { '.chakra-button__icon': { marginInlineEnd: 0 } } }}
         >
           <Box as="span" display={{ base: 'none', md: 'inline' }}>Sincronizar ahora</Box>
-        </Button>
+        </Button>}
 
       <Menu placement="bottom-end">
         <MenuButton as={IconButton} icon={<FiUser size={18} />} aria-label="Cuenta" variant="ghost"

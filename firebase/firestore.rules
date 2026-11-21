@@ -1,0 +1,73 @@
+rules_version = '2';
+
+// ─── REGLAS DE FIRESTORE CON ROLES (panel + landings) ───────────────
+// Listas para desplegar, TODAVÍA NO DESPLEGADAS. Reemplazan a las que
+// hoy están en firestore.rules de cada landing (las 13 son iguales).
+// Pasos y checklist antes de desplegar: firebase/README.md.
+//
+// Roles (custom claims de Firebase Auth, ver netlify/lib/roles.js):
+//   admin   role == 'admin' y su email en panelAdmins/{email}
+//   player  role == 'player' y slug == <su slug>
+//
+// Lo que NO cambia: las landings leen sin login partidos y estadísticas
+// (players/{slug}/matches/* y players/{slug}/stats/*, y la colección
+// legacy matches/*). Esa lectura sigue pública.
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    function signedIn() {
+      return request.auth != null;
+    }
+    function role() {
+      return signedIn() ? request.auth.token.get('role', '') : '';
+    }
+    // Admin: el claim y, además, seguir en panelAdmins. Borrar el doc
+    // de panelAdmins le corta la escritura al instante.
+    function isAdmin() {
+      return role() == 'admin'
+        && request.auth.token.get('email', '') != ''
+        && exists(/databases/$(database)/documents/panelAdmins/$(request.auth.token.email.lower()));
+    }
+    // Cuenta del jugador dueño de ese slug.
+    function isOwner(slug) {
+      return role() == 'player' && request.auth.token.get('slug', '') == slug;
+    }
+
+    // Legacy (landing original de cainfara): matches/{last|next}.
+    match /matches/{matchId} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
+    match /players/{slug} {
+      // Ficha del jugador (alta y edición desde el panel). Las landings
+      // no leen este doc: lo leen el panel (admins) y el propio jugador.
+      allow read: if isAdmin() || isOwner(slug);
+      allow write: if isAdmin();
+
+      // Último y próximo partido: lo que muestra cada landing.
+      match /matches/{matchId} {
+        allow read: if true;
+        allow write: if isAdmin();
+      }
+
+      // Estadísticas (last, prev, season, seasons, history_{año}). Las
+      // escribe la sincronización con el Admin SDK, que no pasa por
+      // estas reglas; desde el navegador sólo un admin.
+      match /stats/{statId} {
+        allow read: if true;
+        allow write: if isAdmin();
+      }
+    }
+
+    // Cuentas de jugador (uid y email) y lista de admins: sólo el
+    // servidor (Admin SDK). Nadie las lee ni escribe desde el navegador.
+    match /playerAccounts/{slug} {
+      allow read, write: if false;
+    }
+    match /panelAdmins/{email} {
+      allow read, write: if false;
+    }
+  }
+}

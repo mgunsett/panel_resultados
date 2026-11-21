@@ -1,5 +1,5 @@
 import { createApiFootballClient } from '../lib/apiFootball.js'
-import { adminDb, requireUser } from '../lib/firebaseAdmin.js'
+import { adminDb, requireAdmin } from '../lib/firebaseAdmin.js'
 import { runSync } from '../lib/sync.js'
 import { backfillClubHistory, backfillPlayerSeason } from '../lib/backfill.js'
 import { currentSeason } from '../lib/mappers.js'
@@ -28,7 +28,7 @@ const json = (status, body) =>
   })
 
 export default async (req) => {
-  const user = await requireUser(req)
+  const user = await requireAdmin(req)
   if (!user) return json(401, { error: 'Sesión inválida. Volvé a iniciar sesión en el panel.' })
 
   const params = new URL(req.url).searchParams

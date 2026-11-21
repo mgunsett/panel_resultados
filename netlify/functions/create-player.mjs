@@ -1,4 +1,4 @@
-import { adminAuth, adminDb, requireUser } from '../lib/firebaseAdmin.js'
+import { adminAuth, adminDb, requireAdmin } from '../lib/firebaseAdmin.js'
 import { loadRoster } from '../lib/roster.js'
 import { createPlayer, CreatePlayerError } from '../lib/createPlayer.js'
 
@@ -16,7 +16,7 @@ const json = (status, body) =>
 
 export default async (req) => {
   if (req.method !== 'POST') return json(405, { error: 'Usá POST.' })
-  const user = await requireUser(req)
+  const user = await requireAdmin(req)
   if (!user) return json(401, { error: 'Sesión inválida. Volvé a iniciar sesión en el panel.' })
 
   const payload = await req.json().catch(() => null)

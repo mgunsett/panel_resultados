@@ -1,5 +1,6 @@
 import { Box, Drawer, DrawerOverlay, DrawerContent, useDisclosure } from '@chakra-ui/react'
 import SidebarNav from './SidebarNav'
+import { useAuth } from '../../lib/auth'
 import TopNav from './TopNav'
 import { SyncProvider } from '../../lib/syncContext'
 
@@ -12,6 +13,7 @@ export const SIDEBAR_WIDTH = '240px'
 
 export default function AppShell({ children }) {
   const { isOpen, onOpen, onClose } = useDisclosure()
+  const { isPlayer } = useAuth()
 
   return (
     <SyncProvider>
@@ -19,7 +21,7 @@ export default function AppShell({ children }) {
         <TopNav onOpenMenu={onOpen} />
         <Box minW={0}>{children}</Box>
 
-        <Drawer isOpen={isOpen} placement="left" onClose={onClose}>
+        <Drawer isOpen={isOpen && !isPlayer} placement="left" onClose={onClose}>
           <DrawerOverlay bg="rgba(0,0,0,0.65)" />
           <DrawerContent bg="brand.dark2" maxW={SIDEBAR_WIDTH}>
             {/* onNavigate cierra el drawer al tocar un item: en mobile
