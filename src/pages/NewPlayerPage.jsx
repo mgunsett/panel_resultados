@@ -9,7 +9,7 @@ import { players, playerInitials } from '../data/players'
 import { clubs } from '../data/clubs'
 import { useRoster } from '../lib/rosterStore'
 import { callApiFootball, normalizeName } from '../lib/apiFootball'
-import { checkSlug, loginEmail, slugify, DEFAULT_LOGIN_DOMAIN, USERNAME_RE } from '../lib/roster'
+import { checkSlug, loginEmail, loginUsername, slugify, DEFAULT_LOGIN_DOMAIN, USERNAME_RE } from '../lib/roster'
 import {
   searchApiPlayers, fetchApiProfile, positionEs, generatePassword, toWebp, uploadPlayerPhoto, uploadClubCrest,
   createPlayerRequest, formatDate,
@@ -391,10 +391,10 @@ function Success({ s, email, copy, onOpen, onAnother }) {
         <Flex direction="column" gap={2.5} p={{ base: 4, md: 5 }} borderRadius="14px" bg="#0f0c0a" border="1px solid rgba(249,160,63,.4)">
           <Text {...lbl} color="brand.orange">Credenciales · se muestran esta única vez</Text>
           <Box display="grid" gridTemplateColumns="110px minmax(0,1fr)" gap="8px 12px" fontSize="15px" alignItems="center">
-            <Text color="brand.gray">Usuario</Text><Code justifySelf="start">{r.email || email}</Code>
+            <Text color="brand.gray">Usuario</Text><Code justifySelf="start">{loginUsername(r.email || email, LOGIN_DOMAIN)}</Code>
             <Text color="brand.gray">Contraseña</Text><Code justifySelf="start">{s.pass}</Code>
           </Box>
-          <Button {...priBtn} {...smBtn} alignSelf="flex-start" onClick={() => copy(`Usuario: ${r.email || email}\nContraseña: ${s.pass}`, 'copiedBoth')}>
+          <Button {...priBtn} {...smBtn} alignSelf="flex-start" onClick={() => copy(`Usuario: ${loginUsername(r.email || email, LOGIN_DOMAIN)}\nContraseña: ${s.pass}`, 'copiedBoth')}>
             {s.copiedBoth ? 'Copiado' : 'Copiar usuario y contraseña'}
           </Button>
         </Flex>

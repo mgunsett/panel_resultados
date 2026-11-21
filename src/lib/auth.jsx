@@ -1,6 +1,9 @@
 import { createContext, useContext, useEffect, useState } from 'react'
-import { onAuthStateChanged, signInWithEmailAndPassword, signOut } from 'firebase/auth'
+import {
+  EmailAuthProvider, onAuthStateChanged, reauthenticateWithCredential, signInWithEmailAndPassword, signOut, updatePassword,
+} from 'firebase/auth'
 import { auth, isFirebaseConfigured } from './firebase'
+import { loginEmail, DEFAULT_LOGIN_DOMAIN } from './roster'
 
 // ─── AUTH Y ROLES ────────────────────────────────────────────────
 // Dos tipos de cuenta, según el custom claim `role` de Firebase Auth
@@ -19,17 +22,26 @@ import { auth, isFirebaseConfigured } from './firebase'
 export const ROLE_ADMIN = 'admin'
 export const ROLE_PLAYER = 'player'
 
+// Los jugadores entran con su usuario solo (nicolas_fernandez): el
+// panel le agrega este dominio. Con un @ (los admins) va tal cual.
+export const LOGIN_DOMAIN = import.meta.env.VITE_PLAYER_LOGIN_DOMAIN || DEFAULT_LOGIN_DOMAIN
+export const toLoginEmail = (text) => loginEmail(text, LOGIN_DOMAIN)
+export const MIN_PASSWORD = 10
+
 const NO_ACCESS = 'Esta cuenta no tiene acceso al panel. Pedile al equipo de LED Sports que la habilite.'
 
 class AccessError extends Error {}
 
+const callSessionRole = async (u, body) => fetch('/.netlify/functions/session-role', {
+  method: 'POST',
+  headers: { Authorization: `Bearer ${await u.getIdToken()}`, 'content-type': 'application/json' },
+  body: JSON.stringify(body || {}),
+})
+
 async function askServerRole(u) {
   let res
   try {
-    res = await fetch('/.netlify/functions/session-role', {
-      method: 'POST',
-      headers: { Authorization: `Bearer ${await u.getIdToken()}` },
-    })
+    res = await callSessionRole(u)
   } catch {
     res = null
   }
@@ -53,7 +65,7 @@ async function resolveAccess(u) {
   const { claims } = await u.getIdTokenResult()
   if (claims.role === ROLE_PLAYER) {
     if (!claims.slug) throw new AccessError(NO_ACCESS)
-    return { role: ROLE_PLAYER, slug: claims.slug }
+    return { role: ROLE_PLAYER, slug: claims.slug, mustChangePassword: claims.mustChangePassword === true }
   }
   if (claims.role === ROLE_ADMIN) return { role: ROLE_ADMIN, slug: null }
   if (claims.role) throw new AccessError(NO_ACCESS)
@@ -75,10 +87,26 @@ function checkAccess(u) {
   return checks.get(u.uid)
 }
 
-const AuthContext = createContext({ user: null, role: null, playerSlug: null, isAdmin: false, isPlayer: false, loading: true })
+// Mensajes de Firebase Auth en castellano.
+const AUTH_ERRORS = {
+  'auth/invalid-credential': 'Usuario o contraseña incorrectos.',
+  'auth/wrong-password': 'Usuario o contraseña incorrectos.',
+  'auth/user-not-found': 'Usuario o contraseña incorrectos.',
+  'auth/invalid-email': 'Ese usuario no es válido.',
+  'auth/user-disabled': 'Esta cuenta está deshabilitada. Hablá con el equipo de LED Sports.',
+  'auth/too-many-requests': 'Demasiados intentos. Esperá unos minutos y probá de nuevo.',
+  'auth/network-request-failed': 'No hay conexión. Revisá internet y probá de nuevo.',
+  'auth/weak-password': `La contraseña nueva tiene que tener al menos ${MIN_PASSWORD} caracteres.`,
+  'auth/requires-recent-login': 'Volvé a escribir tu contraseña actual.',
+}
+const authMessage = (err, fallback) => AUTH_ERRORS[err?.code] || err?.message || fallback
+
+const EMPTY = { user: null, role: null, playerSlug: null, mustChangePassword: false }
+
+const AuthContext = createContext({ ...EMPTY, isAdmin: false, isPlayer: false, loading: true })
 
 export function AuthProvider({ children }) {
-  const [session, setSession] = useState({ user: null, role: null, playerSlug: null })
+  const [session, setSession] = useState(EMPTY)
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
@@ -88,16 +116,16 @@ export function AuthProvider({ children }) {
     }
     const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
       if (!currentUser) {
-        setSession({ user: null, role: null, playerSlug: null })
+        setSession(EMPTY)
         setLoading(false)
         return
       }
       setLoading(true)
       checkAccess(currentUser)
-        .then(({ role, slug }) => setSession({ user: currentUser, role, playerSlug: slug }))
+        .then(({ role, slug, mustChangePassword }) => setSession({ user: currentUser, role, playerSlug: slug, mustChangePassword: Boolean(mustChangePassword) }))
         .catch(async (err) => {
           if (!(err instanceof AccessError)) console.error('No se pudo leer el rol de la cuenta:', err)
-          setSession({ user: null, role: null, playerSlug: null })
+          setSession(EMPTY)
           await signOut(auth)
         })
         .finally(() => setLoading(false))
@@ -105,8 +133,14 @@ export function AuthProvider({ children }) {
     return () => unsubscribe()
   }, [])
 
-  const login = async (email, password) => {
-    const cred = await signInWithEmailAndPassword(auth, email, password)
+  // `text` es el usuario del jugador o el email completo de un admin.
+  const login = async (text, password) => {
+    let cred
+    try {
+      cred = await signInWithEmailAndPassword(auth, toLoginEmail(text), password)
+    } catch (err) {
+      throw new Error(authMessage(err, 'No se pudo ingresar.'))
+    }
     try {
       await checkAccess(cred.user)
     } catch (err) {
@@ -114,6 +148,41 @@ export function AuthProvider({ children }) {
     }
     return cred
   }
+  // Cambio de contraseña desde el panel: Firebase pide reautenticar con
+  // la actual antes de updatePassword. Si era el cambio obligatorio del
+  // primer ingreso, la función session-role le saca el claim.
+  const changePassword = async (current, next) => {
+    const u = auth.currentUser
+    if (!u?.email) throw new Error('No hay sesión iniciada.')
+    if (next.length < MIN_PASSWORD) throw new Error(AUTH_ERRORS['auth/weak-password'])
+    if (next === current) throw new Error('La contraseña nueva tiene que ser distinta de la actual.')
+    try {
+      await reauthenticateWithCredential(u, EmailAuthProvider.credential(u.email, current))
+    } catch (err) {
+      const bad = ['auth/invalid-credential', 'auth/wrong-password'].includes(err?.code)
+      throw new Error(bad ? 'La contraseña actual no es correcta.' : authMessage(err, 'No se pudo verificar tu contraseña.'))
+    }
+    try {
+      await updatePassword(u, next)
+    } catch (err) {
+      throw new Error(authMessage(err, 'No se pudo cambiar la contraseña.'))
+    }
+    if (session.role !== ROLE_PLAYER || !session.mustChangePassword) return
+    let res = null
+    try {
+      res = await callSessionRole(u, { action: 'password-changed' })
+    } catch {
+      res = null
+    }
+    if (!res?.ok) {
+      const data = await res?.json().catch(() => ({}))
+      throw new Error(`Tu contraseña ya cambió, pero no se pudo terminar de guardar (${data?.error || 'sin conexión con el panel'}). Probá de nuevo usando la nueva como actual.`)
+    }
+    await u.getIdToken(true)
+    checks.delete(u.uid)
+    setSession((s) => ({ ...s, mustChangePassword: false }))
+  }
+
   const logout = () => {
     checks.clear()
     return signOut(auth)
@@ -126,6 +195,7 @@ export function AuthProvider({ children }) {
     loading,
     login,
     logout,
+    changePassword,
   }
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>
 }

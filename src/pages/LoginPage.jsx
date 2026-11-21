@@ -6,7 +6,7 @@ import {
 import { FiEye, FiEyeOff } from 'react-icons/fi'
 import { motion, useReducedMotion } from 'framer-motion'
 import { sendPasswordResetEmail } from 'firebase/auth'
-import { useAuth } from '../lib/auth'
+import { useAuth, toLoginEmail } from '../lib/auth'
 import { auth, isFirebaseConfigured } from '../lib/firebase'
 import { useSplash } from '../components/ui/Splash'
 import NotConfigured from '../components/ui/NotConfigured'
@@ -45,7 +45,7 @@ export default function LoginPage() {
   const handleLogin = async (e) => {
     e.preventDefault()
     if (!email || !password) {
-      toast({ title: 'Completá email y contraseña', status: 'warning', duration: 3000 })
+      toast({ title: 'Completá usuario y contraseña', status: 'warning', duration: 3000 })
       return
     }
     setAuthLoading(true)
@@ -63,8 +63,17 @@ export default function LoginPage() {
       toast({ title: 'Escribí tu email arriba y volvé a tocar el enlace', status: 'info', duration: 4000 })
       return
     }
+    // Las cuentas de jugador no tienen un email real: no les llegaría.
+    if (!email.includes('@')) {
+      toast({
+        title: 'Pedile una contraseña nueva al equipo de LED Sports',
+        description: 'Te la restablecen desde el panel y en el próximo ingreso elegís una tuya.',
+        status: 'info', duration: 6000,
+      })
+      return
+    }
     try {
-      await sendPasswordResetEmail(auth, email)
+      await sendPasswordResetEmail(auth, toLoginEmail(email))
       toast({ title: 'Te enviamos un email para cambiar la contraseña', status: 'success', duration: 5000 })
     } catch (err) {
       toast({ title: 'No se pudo enviar el email', description: err.message, status: 'error', duration: 5000 })
@@ -99,14 +108,14 @@ export default function LoginPage() {
               Panel de administración
             </Text>
             <Text mt={2.5} fontSize="15px" color="brand.gray">
-              Ingresá con tu cuenta del equipo para administrar las landings.
+              Jugadores: ingresá con tu usuario. Equipo de LED Sports: con tu email.
             </Text>
           </Box>
 
           <FormControl>
-            <FormLabel {...labelStyle}>Email</FormLabel>
-            <Input {...fieldStyle} type="email" value={email} onChange={(e) => setEmail(e.target.value)}
-              placeholder="nombre@ledsports.com" autoComplete="username" />
+            <FormLabel {...labelStyle}>Usuario o email</FormLabel>
+            <Input {...fieldStyle} type="text" value={email} onChange={(e) => setEmail(e.target.value.trim())}
+              placeholder="tu_usuario" autoComplete="username" autoCapitalize="none" autoCorrect="off" spellCheck={false} />
           </FormControl>
 
           <FormControl>
