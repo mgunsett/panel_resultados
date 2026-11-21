@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
-import { Box, Button, Flex, IconButton, Input, Spinner, Text } from '@chakra-ui/react'
+import { Box, Button, Checkbox, Flex, IconButton, Input, Spinner, Text } from '@chakra-ui/react'
 import { FiEye, FiEyeOff, FiKey, FiRefreshCw, FiUserPlus } from 'react-icons/fi'
-import { loginEmail, DEFAULT_LOGIN_DOMAIN, USERNAME_RE } from '../../lib/roster'
+import { loginEmail, loginUsername, DEFAULT_LOGIN_DOMAIN, USERNAME_RE } from '../../lib/roster'
 import { accountStatus, createAccount, resetAccountPassword, generatePassword } from '../../lib/newPlayer'
 import { Notice, Code, priBtn, ghostBtn, smBtn, fieldStyle, monoField, lbl } from '../newPlayer/ui'
 
@@ -15,6 +15,16 @@ import { Notice, Code, priBtn, ghostBtn, smBtn, fieldStyle, monoField, lbl } fro
 const LOGIN_DOMAIN = import.meta.env.VITE_PLAYER_LOGIN_DOMAIN || DEFAULT_LOGIN_DOMAIN
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
 const fmtDate = (iso) => (iso ? new Date(iso).toLocaleDateString('es-AR', { day: 'numeric', month: 'short', year: 'numeric' }) : '')
+
+// Tildado, en su próximo ingreso el jugador tiene que elegir una
+// contraseña propia antes de ver su ficha.
+function MustChangeBox({ checked, onChange }) {
+  return (
+    <Checkbox colorScheme="orange" isChecked={checked} onChange={() => onChange(!checked)}>
+      Pedirle que la cambie cuando entre
+    </Checkbox>
+  )
+}
 
 function PasswordBox({ pass, eye, onEye, onRegenerate }) {
   return (
@@ -37,6 +47,7 @@ export default function PlayerAccess({ player, isOpen }) {
   const [username, setUsername] = useState('')
   const [pass, setPass] = useState('')
   const [eye, setEye] = useState(true)
+  const [mustChange, setMustChange] = useState(true)
   const [busy, setBusy] = useState(false)
   const [err, setErr] = useState(null)
   const [creds, setCreds] = useState(null)
@@ -55,15 +66,15 @@ export default function PlayerAccess({ player, isOpen }) {
 
   const usernameBad = !(username.includes('@') ? EMAIL_RE.test(username) : USERNAME_RE.test(username))
   const email = loginEmail(username, LOGIN_DOMAIN)
-  const start = (m) => { setMode(m); setErr(null); setPass(generatePassword()); setEye(true) }
+  const start = (m) => { setMode(m); setErr(null); setPass(generatePassword()); setEye(true); setMustChange(true) }
 
   const run = async () => {
     setBusy(true); setErr(null)
     try {
       const info = mode === 'create'
-        ? await createAccount(player.slug, { username, password: pass })
-        : await resetAccountPassword(player.slug, pass)
-      setCreds({ email: info.email, password: pass, kind: mode })
+        ? await createAccount(player.slug, { username, password: pass, mustChange })
+        : await resetAccountPassword(player.slug, pass, mustChange)
+      setCreds({ user: loginUsername(info.email, LOGIN_DOMAIN), password: pass, kind: mode })
       setSt({ status: 'has', info })
       setMode(null); setCopied(false)
     } catch (e) {
@@ -74,7 +85,7 @@ export default function PlayerAccess({ player, isOpen }) {
   }
 
   const copy = () => {
-    navigator.clipboard?.writeText(`Usuario: ${creds.email}\nContraseña: ${creds.password}`)
+    navigator.clipboard?.writeText(`Usuario: ${creds.user}\nContraseña: ${creds.password}`)
       .then(() => setCopied(true)).catch(() => setCopied(false))
   }
 
@@ -92,7 +103,7 @@ export default function PlayerAccess({ player, isOpen }) {
           {creds.kind === 'create' ? 'Cuenta creada' : 'Contraseña nueva'} · se muestra esta única vez
         </Text>
         <Box display="grid" gridTemplateColumns="96px minmax(0,1fr)" gap="8px 12px" fontSize="15px" alignItems="center">
-          <Text color="brand.gray">Usuario</Text><Code justifySelf="start" wordBreak="break-all">{creds.email}</Code>
+          <Text color="brand.gray">Usuario</Text><Code justifySelf="start" wordBreak="break-all">{creds.user}</Code>
           <Text color="brand.gray">Contraseña</Text><Code justifySelf="start" wordBreak="break-all">{creds.password}</Code>
         </Box>
         <Text fontSize="13px" color="#8c7f70">Copiala antes de cerrar este panel: después no se puede volver a ver, sólo restablecer.</Text>
@@ -124,10 +135,11 @@ export default function PlayerAccess({ player, isOpen }) {
           <Input {...fieldStyle} {...monoField} h="44px" value={username} isInvalid={usernameBad} autoComplete="off" spellCheck={false}
             onChange={(e) => setUsername(e.target.value.toLowerCase().replace(/\s+/g, ''))} />
           <Text fontSize="13px" color={usernameBad ? '#ff9a8a' : '#8c7f70'}>
-            {usernameBad ? 'Entre 3 y 40 caracteres: letras, números, punto, guion o guion bajo. O un email completo.' : <>Entra con <b>{email}</b>.</>}
+            {usernameBad ? 'Entre 3 y 40 caracteres: letras, números, punto, guion o guion bajo. O un email completo.' : <>Entra con el usuario <b>{loginUsername(email, LOGIN_DOMAIN)}</b> (su cuenta es {email}).</>}
           </Text>
         </Flex>
         <PasswordBox pass={pass} eye={eye} onEye={() => setEye(!eye)} onRegenerate={() => setPass(generatePassword())} />
+        <MustChangeBox checked={mustChange} onChange={setMustChange} />
         {err && <Notice kind="err" py={2}>{err}</Notice>}
         <Flex gap={2} wrap="wrap">
           <Button {...priBtn} {...smBtn} onClick={run} isLoading={busy} loadingText="Creando" isDisabled={usernameBad}>Crear cuenta</Button>
@@ -142,16 +154,19 @@ export default function PlayerAccess({ player, isOpen }) {
     <Flex direction="column" gap={3}>
       <Flex direction="column" gap={1.5}>
         <Text {...lbl}>Usuario</Text>
-        <Code alignSelf="flex-start" wordBreak="break-all">{info.email}</Code>
+        <Code alignSelf="flex-start" wordBreak="break-all">{loginUsername(info.email, LOGIN_DOMAIN)}</Code>
         <Text fontSize="13px" color="#8c7f70">
           {info.createdAt ? `Cuenta creada el ${fmtDate(info.createdAt)}.` : 'Tiene cuenta.'}
           {info.passwordResetAt ? ` Contraseña restablecida el ${fmtDate(info.passwordResetAt)}.` : ''}
+          {info.passwordChangedAt ? ` El jugador la cambió el ${fmtDate(info.passwordChangedAt)}.` : ''}
+          {info.mustChangePassword ? ' Todavía no eligió su contraseña.' : ''}
           {info.disabled ? ' La cuenta está deshabilitada en Firebase: restablecer la contraseña la vuelve a habilitar.' : ''}
         </Text>
       </Flex>
       {mode === 'reset' ? (
         <>
           <PasswordBox pass={pass} eye={eye} onEye={() => setEye(!eye)} onRegenerate={() => setPass(generatePassword())} />
+          <MustChangeBox checked={mustChange} onChange={setMustChange} />
           <Notice kind="warn" py={2}>La contraseña de antes deja de andar y se cierran las sesiones que tenga abiertas.</Notice>
           {err && <Notice kind="err" py={2}>{err}</Notice>}
           <Flex gap={2} wrap="wrap">

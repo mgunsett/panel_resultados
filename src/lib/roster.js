@@ -98,4 +98,12 @@ export function loginEmail(username, domain = DEFAULT_LOGIN_DOMAIN) {
   return u.includes('@') ? u : `${u}@${domain}`
 }
 
+// Lo que escribe el jugador en el login: el usuario sin el dominio de
+// las cuentas de jugador. Un email de otro dominio queda entero.
+export function loginUsername(email, domain = DEFAULT_LOGIN_DOMAIN) {
+  const e = String(email || '').trim().toLowerCase()
+  const suffix = `@${String(domain).toLowerCase()}`
+  return e.endsWith(suffix) ? e.slice(0, -suffix.length) : e
+}
+
 export const USERNAME_RE = /^[a-z0-9._-]{3,40}$/

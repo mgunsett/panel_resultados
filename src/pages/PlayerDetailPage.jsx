@@ -1,7 +1,7 @@
 import {
   Box, Flex, Text, Button, Code, Image, Select, Spinner, Tabs, TabList, Tab, TabPanels, TabPanel,
 } from '@chakra-ui/react'
-import { FiArrowLeft, FiEdit3, FiShield, FiBarChart2 } from 'react-icons/fi'
+import { FiArrowLeft, FiEdit3, FiShield, FiBarChart2, FiKey } from 'react-icons/fi'
 import { useNavigate, useParams, useSearchParams, Link as RouterLink } from 'react-router-dom'
 import { motion, useReducedMotion } from 'framer-motion'
 import { getPlayer, players, playerInitials } from '../data/players'
@@ -20,6 +20,7 @@ import { useEditPlayer } from '../components/players/EditPlayerDrawer'
 import { useRoster } from '../lib/rosterStore'
 import { useAuth } from '../lib/auth'
 import MatchEditor from '../components/match/MatchEditor'
+import { ChangePasswordButton } from '../components/account/ChangePassword'
 import ExportMenu from '../components/stats/ExportMenu'
 import PlayerSeasons from '../components/stats/PlayerSeasons'
 import RatingChart from '../components/profile/RatingChart'
@@ -217,6 +218,12 @@ export default function PlayerDetailPage() {
                   </Button>
                 )}
                 <PlayerLinks player={player} btn={btn} onEdit={readOnly ? undefined : edit.open} />
+                {readOnly && (
+                  <ChangePasswordButton {...btn} leftIcon={<FiKey />} variant="outline" borderColor="brand.brownDark" color="brand.amber"
+                    _hover={{ bg: 'brand.brownLight', color: 'white' }}>
+                    Cambiar contraseña
+                  </ChangePasswordButton>
+                )}
                 {hasStats && <Box alignSelf="center"><ExportMenu name={exportFileName(player.slug, year)} sheets={exportSheets} isDisabled={statsLoading} /></Box>}
               </Flex>
             </Flex>

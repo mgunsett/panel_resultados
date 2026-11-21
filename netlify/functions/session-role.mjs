@@ -1,5 +1,6 @@
-import { adminAuth, verifyRequest } from '../lib/firebaseAdmin.js'
+import { adminAuth, adminDb, verifyRequest } from '../lib/firebaseAdmin.js'
 import { ROLE_ADMIN } from '../lib/roles.js'
+import { markPasswordChanged, AccountError } from '../lib/playerAccounts.js'
 
 // ─── ROL DE LA SESIÓN ────────────────────────────────────────────
 // El panel la llama al iniciar sesión cuando la cuenta todavía no tiene
@@ -7,6 +8,9 @@ import { ROLE_ADMIN } from '../lib/roles.js'
 // panelAdmins (Firestore) le pone el claim role: 'admin' y el panel refresca el
 // token. Devuelve { role, slug? }; 403 si la cuenta no tiene acceso.
 // Nunca le cambia el rol a una cuenta que ya tiene uno.
+//
+// Con { action: 'password-changed' } (una cuenta de jugador que acaba
+// de cambiar su contraseña) le saca el claim mustChangePassword.
 
 const json = (status, body) =>
   new Response(JSON.stringify(body), {
@@ -18,6 +22,17 @@ export default async (req) => {
   if (req.method !== 'POST') return json(405, { error: 'Usá POST.' })
   const user = await verifyRequest(req)
   if (!user) return json(401, { error: 'Sesión inválida. Volvé a iniciar sesión.' })
+
+  const body = await req.json().catch(() => ({}))
+  if (body?.action === 'password-changed') {
+    try {
+      return json(200, await markPasswordChanged({ db: adminDb(), auth: adminAuth(), user }))
+    } catch (err) {
+      if (err instanceof AccountError) return json(err.status, { error: err.message })
+      console.error('session-role password-changed:', err)
+      return json(500, { error: 'No se pudo guardar el cambio. Probá de nuevo.' })
+    }
+  }
 
   const { role, slug, needsClaim, legacy } = user.access
   if (!role) return json(403, { role: null, error: 'Esta cuenta no tiene acceso al panel. Pedile al equipo de LED Sports que la habilite.' })

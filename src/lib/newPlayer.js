@@ -59,7 +59,7 @@ export const createPlayerRequest = (payload) => callCreatePlayer(payload)
 // netlify/lib/playerAccounts.js). Sólo para admins.
 export const accountStatus = (slug) => callCreatePlayer({ action: 'account-status', slug })
 export const createAccount = (slug, account) => callCreatePlayer({ action: 'account-create', slug, account })
-export const resetAccountPassword = (slug, password) => callCreatePlayer({ action: 'account-reset', slug, password })
+export const resetAccountPassword = (slug, password, mustChange = true) => callCreatePlayer({ action: 'account-reset', slug, password, mustChange })
 
 async function callCreatePlayer(payload) {
   const user = auth?.currentUser

@@ -23,6 +23,13 @@ const notFound = (e) => (e?.code === 'auth/user-not-found' ? null : Promise.reje
 
 export const ACCOUNT_ACTIONS = ['account-status', 'account-create', 'account-reset']
 
+// Claims de una cuenta de jugador. mustChangePassword le pide al panel
+// que muestre la pantalla de cambio de contraseña antes que la ficha;
+// lo saca markPasswordChanged() cuando el jugador la cambia.
+export function playerClaims(slug, mustChange) {
+  return mustChange ? { role: 'player', slug, mustChangePassword: true } : { role: 'player', slug }
+}
+
 export function checkEnabled(env) {
   if (env.PLAYER_ACCOUNTS_ENABLED !== 'true') {
     fail(403, 'La creación de cuentas de jugador está apagada. Activá PLAYER_ACCOUNTS_ENABLED=true en Netlify después de actualizar las reglas de Firestore (ver README).')
@@ -54,8 +61,9 @@ export async function ensureAccount({ auth, slug, name, account, env, now, admin
   } else {
     user = await auth.createUser({ email, password, displayName: name || undefined })
   }
-  await auth.setCustomUserClaims(user.uid, { role: 'player', slug })
-  return { uid: user.uid, email, mustChangePassword: Boolean(account.mustChange), createdAt: now, createdBy: adminUid }
+  const mustChange = Boolean(account.mustChange)
+  await auth.setCustomUserClaims(user.uid, playerClaims(slug, mustChange))
+  return { uid: user.uid, email, mustChangePassword: mustChange, createdAt: now, createdBy: adminUid }
 }
 
 // La cuenta guardada de un slug, si todavía existe en Authentication.
@@ -74,6 +82,8 @@ const publicInfo = (acc) => ({
   email: acc.email,
   createdAt: acc.createdAt || null,
   passwordResetAt: acc.passwordResetAt || null,
+  passwordChangedAt: acc.passwordChangedAt || null,
+  mustChangePassword: Boolean(acc.mustChangePassword),
   disabled: Boolean(acc.user?.disabled),
 })
 
@@ -111,12 +121,29 @@ export async function playerAccess({ db, auth, roster, payload, env = process.en
     const password = String(p.password || '')
     checkPassword(password)
     // Cambiar la contraseña cierra las sesiones que tenía abiertas.
+    // Salvo que el admin lo destilde, al entrar con la contraseña nueva
+    // se le vuelve a pedir que la cambie por una suya.
+    const mustChange = p.mustChange !== false
     await auth.updateUser(acc.uid, { password, disabled: false })
-    await auth.setCustomUserClaims(acc.uid, { role: 'player', slug })
-    const patch = { passwordResetAt: now, passwordResetBy: adminUid, mustChangePassword: Boolean(p.mustChange) }
+    await auth.setCustomUserClaims(acc.uid, playerClaims(slug, mustChange))
+    const patch = { passwordResetAt: now, passwordResetBy: adminUid, mustChangePassword: mustChange }
     await db.collection(PLAYER_ACCOUNTS).doc(slug).set(patch, { merge: true })
     return { ...publicInfo({ ...acc, ...patch, user: { disabled: false } }), reset: true }
   }
 
   return fail(400, 'Acción desconocida.')
+}
+
+// El jugador cambió su contraseña desde el panel (reauth + updatePassword
+// en el navegador): se le saca el pedido de cambio obligatorio. Sólo
+// con un token de un login reciente (la reautenticación renueva
+// auth_time), así un token viejo robado no alcanza para esto.
+const RECENT_LOGIN_S = 10 * 60
+export async function markPasswordChanged({ db, auth, user, now = new Date().toISOString(), nowS = Math.floor(Date.now() / 1000) }) {
+  const { role, slug } = user.access || {}
+  if (role !== 'player' || !slug) fail(403, 'Sólo las cuentas de jugador usan esto.')
+  if (!user.auth_time || nowS - user.auth_time > RECENT_LOGIN_S) fail(401, 'Volvé a escribir tu contraseña actual.')
+  await auth.setCustomUserClaims(user.uid, playerClaims(slug, false))
+  await db.collection(PLAYER_ACCOUNTS).doc(slug).set({ mustChangePassword: false, passwordChangedAt: now }, { merge: true })
+  return { role, slug, mustChangePassword: false, refreshed: true }
 }

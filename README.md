@@ -104,6 +104,23 @@ La contraseña se muestra una sola vez. Las dos acciones van por la misma
 función `create-player` (`action: account-create | account-reset`, ver
 `netlify/lib/playerAccounts.js`).
 
+### Cómo entra el jugador
+
+- **Login con el usuario solo**: el jugador escribe `nicolas_fernandez` y el
+  panel le agrega `@VITE_PLAYER_LOGIN_DOMAIN`. Si lo que se escribe tiene `@`
+  (los admins) se usa tal cual.
+- **Cambio de contraseña obligatorio**: con "Pedirle que la cambie" tildado
+  (viene tildado en el alta, en Crear acceso y en Restablecer contraseña) la
+  cuenta lleva el claim `mustChangePassword: true`. Al entrar, el jugador ve
+  "Elegí tu contraseña" en vez de su ficha. La cambia en el navegador
+  (reautenticación + `updatePassword`) y la función `session-role`
+  (`action: 'password-changed'`) le saca el claim y anota `passwordChangedAt`
+  en `playerAccounts/{slug}`.
+- **Cambiarla cuando quiera**: "Cambiar contraseña" en el menú de la cuenta
+  (arriba a la derecha) y en su ficha. Los admins también la tienen en el menú.
+- "¿Olvidaste tu contraseña?" sólo manda email a cuentas con email real. A un
+  jugador le dice que pida un restablecimiento al equipo.
+
 ### Antes de activar las cuentas
 
 Las reglas desplegadas hoy dejan escribir a **cualquier** usuario logueado:

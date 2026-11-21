@@ -1,7 +1,7 @@
 import {
   Box, Flex, HStack, Text, Button, IconButton, Menu, MenuButton, MenuList, MenuItem,
 } from '@chakra-ui/react'
-import { FiMenu, FiRefreshCw, FiLogOut, FiUser } from 'react-icons/fi'
+import { FiMenu, FiRefreshCw, FiLogOut, FiUser, FiKey } from 'react-icons/fi'
 import { useLocation, useNavigate } from 'react-router-dom'
 import { motion } from 'framer-motion'
 import { useAuth } from '../../lib/auth'
@@ -9,6 +9,7 @@ import { useSyncAll } from '../../lib/syncContext'
 import { nextScheduledSync, formatTime, formatWhen } from '../../lib/homeData'
 import { NAV_ITEMS, isItemActive } from './SidebarNav'
 import BrandLogo from '../ui/BrandLogo'
+import { useChangePassword } from '../account/ChangePassword'
 
 const MotionBox = motion(Box)
 
@@ -44,6 +45,7 @@ export default function TopNav({ onOpenMenu }) {
   const navigate = useNavigate()
   const { user, logout, isPlayer } = useAuth()
   const { running, runSync } = useSyncAll()
+  const password = useChangePassword()
   // Cuenta de jugador: sólo la marca y la cuenta. Sin secciones ni
   // sincronización (tampoco podría usarlas: las funciones las rechazan).
   const full = !isPlayer
@@ -104,11 +106,15 @@ export default function TopNav({ onOpenMenu }) {
           color="brand.gray" _hover={{ color: 'white', bg: 'brand.brownLight' }} flexShrink={0} />
         <MenuList bg="brand.dark2" borderColor="brand.brownDark" fontSize="sm" zIndex={30}>
           <Text px={3} py={2} fontFamily="mono" fontSize="12px" color="brand.gray">{user?.email}</Text>
+          <MenuItem icon={<FiKey />} bg="transparent" _hover={{ bg: 'brand.brownLight' }} onClick={password.open}>
+            Cambiar contraseña
+          </MenuItem>
           <MenuItem icon={<FiLogOut />} bg="transparent" _hover={{ bg: 'brand.brownLight' }} onClick={logout}>
             Salir
           </MenuItem>
         </MenuList>
       </Menu>
+      {password.modal}
     </Flex>
   )
 }

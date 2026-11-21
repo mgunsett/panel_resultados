@@ -8,6 +8,7 @@ import { isFirebaseConfigured } from './lib/firebase'
 import NotConfigured from './components/ui/NotConfigured'
 import PageTransition from './components/ui/PageTransition'
 import AppShell from './components/layout/AppShell'
+import { ForcedPasswordChange } from './components/account/ChangePassword'
 import LoginPage from './pages/LoginPage'
 import HomePage from './pages/HomePage'
 import PlayersPage from './pages/PlayersPage'
@@ -79,7 +80,10 @@ function PlayerRoutes() {
 }
 
 function RoleRoutes() {
-  const { isPlayer } = useAuth()
+  const { isPlayer, mustChangePassword } = useAuth()
+  // Primer ingreso (o contraseña restablecida por un admin): antes de
+  // ver su ficha elige una contraseña propia.
+  if (isPlayer && mustChangePassword) return <ForcedPasswordChange />
   return isPlayer ? <PlayerRoutes /> : <PanelRoutes />
 }
 

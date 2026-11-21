@@ -319,7 +319,7 @@ export function StepAccess({ w }) {
             <Input {...fieldStyle} {...monoField} value={w.username} isInvalid={w.usernameBad} autoComplete="off" spellCheck={false}
               onChange={(e) => w.set({ username: e.target.value.toLowerCase().replace(/\s+/g, '') })} />
             <Text fontSize="13px" color={w.usernameBad ? '#ff9a8a' : '#8c7f70'}>
-              {w.usernameBad ? 'Entre 3 y 40 caracteres: letras, números, punto, guion o guion bajo. O un email completo.' : <>Entra con <b>{w.email}</b>.</>}
+              {w.usernameBad ? 'Entre 3 y 40 caracteres: letras, números, punto, guion o guion bajo. O un email completo.' : <>Entra con el usuario <b>{w.username}</b> (su cuenta es {w.email}).</>}
             </Text>
           </Flex>
           <Flex direction="column" gap={2}>
